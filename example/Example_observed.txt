@@ -1,0 +1,20 @@
+# text
+#
+# Report uncertainties under each a.p.f.u. value, or let IntersecT calculate an uncertainty based on the type of measurement.
+# Report the type of measurement: EDS, WDS map, WDS spot
+# 
+# Examples of available colour schemes: viridis, plasma, inferno, magma, cividis, copper, spring
+#
+#
+# Sample name: Average metapelite
+
+Grt_Mg	Grt_Ca	Grt_Mn	Grt_Fe	Bt_Mg	Bt_Fe	Bt_Si	Bt_Al	Bt_Mn	Wm_Mg	Wm_Fe	Wm_Si	Wm_Al	Wm_Na	Chl_Si	Chl_Al	Chl_Mg	Chl_Fe	Chl_Mn
+0.2205	0.6772	0.0720	2.0304	1.1819	1.7221	2.9055	1.1891	0.0015	0.0657	0.0562	3.1161	2.7620	0.1891	2.8848	2.2305	2.5636	2.3183	0.0028
+-
+WDS spot
+
+Phases:
+Grt	Bt	Wm	Chl
+
+Colour scheme:
+viridis
