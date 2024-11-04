@@ -1,0 +1,17 @@
+[project]
+name = "IntersecT"
+version = "0.0.1"
+description = "Quantitative isopleth thermobarometry from PerpleX"
+authors = [{name = "Sara Nerone", email = "sara.nerone@unito.it"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pandas",
+    "pytk",
+]
