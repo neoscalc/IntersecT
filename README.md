@@ -27,23 +27,25 @@ Read the instructions and run the code cells (**Shift+Enter** when positioned in
 Also refer to the [example folder](https://github.com/neoscalc/IntersecT/tree/main/example)
 
 1. **WERAMI .tab file**
-    Using the WERAMI routine of Perple_X, export the a.p.f.u. of the elements for each phase that are considered at equilibrium. Columns can be added or deleted manually (e.g., using Excel), but do not modify the rows.
+
+Using the WERAMI routine of Perple_X, export the a.p.f.u. of the elements for each phase that are considered at equilibrium. Columns can be added or deleted manually (e.g., using Excel), but do not modify the rows.
 
 2. **User's .txt file**
-    The .txt input file must contain:
-    	i. As many rows of comment text as wanted, just make sure they start with ‘#’; these will not be read by the script, and can contain information about the sample or the calculation
-        
-        ii. Any given name for the considered element; these will serve as titles for the plots and the saved .pdf files
 
-        iii. The measured composition (in a.p.f.u.) for each element corresponding to the WERAMI calculation
+The .txt input file must contain:
+i. As many rows of comment text as wanted, just make sure they start with ‘#’; these will not be read by the script, and can contain information about the sample or the calculation
         
-        iv.	The observed uncertainty (1σ) for each element; alternatively, “-“ must be inserted to let the script calculate an uncertainty based on the type of acquired analysis
+ii. Any given name for the considered element; these will serve as titles for the plots and the saved .pdf files
+
+iii. The measured composition (in a.p.f.u.) for each element corresponding to the WERAMI calculation
         
-        v. Type of analysis: EDS, WDS map, WDS spot
+iv.	The observed uncertainty (1σ) for each element; alternatively, “-“ must be inserted to let the script calculate an uncertainty based on the type of acquired analysis
         
-        vi. The name of the phases; these will serve as titles for the plots and the saved .pdf files
+v. Type of analysis: EDS, WDS map, WDS spot
         
-        vii. A chosen colour scheme for the plots from the options available in Python
+vi. The name of the phases; these will serve as titles for the plots and the saved .pdf files
+        
+vii. A chosen colour scheme for the plots from the options available in Python
 
 ## Explanation of the code cells
 ```python
