@@ -1,5 +1,5 @@
 # IntersecT
-<img width="150" alt="IntersecT_logo" src="https://github.com/neoscalc/IntersecT/blob/main/src/IntersecT/Logo-IntersecT.png">
+<img width="150" alt="IntersecT_logo" src="https://github.com/neoscalc/IntersecT/blob/main/src/pyIntersecT/Logo-IntersecT.png">
 
 IntersecT is a Python script that allows quantitative isopleth thermobarometry on Perple_X pressure (P)-temperature (T)-composition (X) phase diagrams.
 The quality factor of the composition (***Q*cmp**, as reported in [Duesterhoeft and Lanari, 2020](https://doi.org/10.1111/jmg.12538)) is calculated for the extracted compositions using the WERAMI routine of Perple_X. The **WERAMI output** file must contain only the phases considered in equilibrium, and their composition must be in **a.p.f.u.** to allow the propagation of uncertainties.
