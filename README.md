@@ -51,16 +51,13 @@ vii. A chosen colour scheme for the plots from the options available in Python
 
 ## Explanation of the code cells
 ```python
-%pip install matplotlib
-%pip install pandas
-%pip install pytk
-%pip install IntersecT
+%pip install pyIntersecT
 ```
 installs the required packages automatically if not already installed in the local environment.
 
 ```python
-import IntersecT as InersecT
-InT = InersecT.QualityFactorAnalysis()
+from pyIntersecT import IntersecT 
+InT = IntersecT.QualityFactorAnalysis()
 ```
 imports the **IntersecT library**, which is necessary to run the following calculations and defines the object InT to call the subroutines to calculate the quality factor.
 
