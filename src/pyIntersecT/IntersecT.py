@@ -175,7 +175,7 @@ class QualityFactorAnalysis:
         plt.ylabel(self.labels[1])
         plt.clim(0, 100)
 
-        print('The maximum value of the quality factor for ' + self.apfu_name[i] + ' is: ', np.nanmax(Qcmp_2D))
+        print('The maximum value of the quality factor for', self.apfu_name[i], 'is:', np.nanmax(Qcmp_2D))
         contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 100, 10), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
         plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
 
@@ -197,7 +197,7 @@ class QualityFactorAnalysis:
         plt.ylabel(self.labels[1])
         plt.clim(0, 100)
 
-        print('The maximum value of the quality factor for ' + self.phase_name[i-1] + ' is: ', np.nanmax(Qcmp_2D))
+        print('The maximum value of the quality factor for', self.phase_name[i-1], 'is:', np.nanmax(Qcmp_2D))
         contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 100, 10), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
         plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
 
@@ -206,7 +206,7 @@ class QualityFactorAnalysis:
             max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
             max_Qcmp_y = self.y[max_Qcmp[0]*n_p]
             max_Qcmp_x = self.x[max_Qcmp[1]]
-            print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum Qcmp of ', self.phase_name[i-1],' is: ', max_Qcmp_x, ', ', max_Qcmp_y)
+            print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum Qcmp of', self.phase_name[i-1], 'is:', max_Qcmp_x, ',', max_Qcmp_y)
 
         # Save plot as PDF
         output_path = os.path.join(self.output_dir)
@@ -218,13 +218,13 @@ class QualityFactorAnalysis:
 
     def plot_tot(self, Qcmp, title):
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(Qcmp_2D, cmap='viridis', aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
+        plt.imshow(Qcmp_2D, cmap=self.color_scheme, aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
         plt.colorbar()
-        plt.title(title + ' total quality factor')
+        plt.title(title + ' Q*cmp')
         plt.xlabel(self.labels[0])
         plt.ylabel(self.labels[1])
         plt.clim(0, 100)
-        print('The maximum value of the total quality factor is: ', np.nanmax(Qcmp_2D))
+        print('The maximum value of the Q*cmp is:', np.nanmax(Qcmp_2D))
 
         contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 110, 10), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
         plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
@@ -235,7 +235,7 @@ class QualityFactorAnalysis:
         max_Qcmp_x = self.x[max_Qcmp[1]]
         max_Qcmp_x = np.mean(max_Qcmp_x)
         max_Qcmp_y = np.mean(max_Qcmp_y)
-        print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum total Qcmp is: ', max_Qcmp_x, ', ', max_Qcmp_y)
+        print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum Q*cmp is:', max_Qcmp_x, ',', max_Qcmp_y)
 
         plt.plot(max_Qcmp_x, max_Qcmp_y, "ro", markersize=2)
         os.makedirs(self.output_dir, exist_ok=True)
@@ -243,36 +243,62 @@ class QualityFactorAnalysis:
         plt.show()
         plt.close()
 
-    def plot_redchi2_phase(self, redchi2, i, title):
+    def plot_redchi2_phase(self, redchi2, i, f):
         redchi2_2D = np.reshape(redchi2, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(redchi2_2D, cmap='viridis', aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
-        plt.colorbar()
-        plt.title(title + self.phase_name[i-1])
-        plt.xlabel(self.labels[0])
-        plt.ylabel(self.labels[1])
+        if f > 2:
+            print("The number of elements in", self.phase_name[i-1], "is:", f)
+            plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+            plt.colorbar()
+            plt.title('Reduced χ2 ' + self.phase_name[i-1])
+            plt.xlabel(self.labels[0])
+            plt.ylabel(self.labels[1])
 
-        min_redchi2 = np.nanmin(redchi2_2D)
-        max_redchi2 = np.nanmax(redchi2_2D)
-        step = (max_redchi2 - min_redchi2) / 10
-        print('The minimum reduced χ2 value for ', self.phase_name[i-1], ' is: ', min_redchi2)
+            min_redchi2 = np.nanmin(redchi2_2D)
+            max_redchi2 = np.nanmax(redchi2_2D)
+            step = (max_redchi2 - min_redchi2) / 10
+            print('The minimum reduced χ2 value for', self.phase_name[i-1], 'is:', min_redchi2)
 
-        if min_redchi2 <= 1:
-            contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+            if min_redchi2 <= 1:
+                contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+            else:
+                contoured = plt.contour(redchi2_2D, levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+
+            plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
+            os.makedirs(self.output_dir, exist_ok=True)
+            plt.savefig(os.path.join(self.output_dir, "redχ2_" + self.phase_name[i-1] + '.pdf'), format='pdf')
+            plt.show()
+            plt.close()
+        
         else:
-            contoured = plt.contour(redchi2_2D, levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+            print("The number of elements in", self.phase_name[i-1], "is:", f)
+            plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+            plt.colorbar()
+            plt.title('χ2 ' + self.phase_name[i-1])
+            plt.xlabel(self.labels[0])
+            plt.ylabel(self.labels[1])
 
-        plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-        title = title.replace(" ", "_")
-        os.makedirs(self.output_dir, exist_ok=True)
-        plt.savefig(os.path.join(self.output_dir, title + self.phase_name[i-1] + '.pdf'), format='pdf')
-        plt.show()
-        plt.close()
+            min_redchi2 = np.nanmin(redchi2_2D)
+            max_redchi2 = np.nanmax(redchi2_2D)
+            step = (max_redchi2 - min_redchi2) / 10
+            print('The minimum χ2 value for', self.phase_name[i-1], 'is:', min_redchi2)
+
+            if min_redchi2 <= 1 and min_redchi2 != max_redchi2:
+                contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+                plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
+            elif min_redchi2 > 1 and min_redchi2 != max_redchi2:
+                contoured = plt.contour(redchi2_2D, levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+                plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
+
+            os.makedirs(self.output_dir, exist_ok=True)
+            plt.savefig(os.path.join(self.output_dir, "χ2_" + self.phase_name[i-1] + '.pdf'), format='pdf')
+            plt.show()
+            plt.close()
 
         return min_redchi2
 
     def plot_redchi2_tot(self, redchi2):
         redchi2_2D = np.reshape(redchi2, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(redchi2_2D, cmap='viridis', aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
+        plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
         plt.colorbar()
         plt.title('Total reduced χ2')
         plt.xlabel(self.labels[0])
@@ -288,13 +314,13 @@ class QualityFactorAnalysis:
             contoured = plt.contour(redchi2_2D, levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), colors="white", linewidths=0.5, origin="lower", extent=[min(self.x), max(self.x), min(self.y), max(self.y)], norm=colors.LogNorm())
 
         plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-        print('The minimum value of the total reduced χ2 is: ', min_redchi2)
+        print('The minimum value of the total reduced χ2 is:', min_redchi2)
 
         n_p = np.count_nonzero(self.y == self.y[0])
         min_redchi2_pos = np.where(redchi2_2D == np.nanmin(redchi2_2D))
         min_redchi2_y = self.y[min_redchi2_pos[0]*n_p]
         min_redchi2_x = self.x[min_redchi2_pos[1]]
-        print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the minimum total reduced χ2 is: ', min_redchi2_x , ', ', min_redchi2_y)
+        print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the minimum total reduced χ2 is:', min_redchi2_x , ',', min_redchi2_y)
 
         os.makedirs(self.output_dir, exist_ok=True)
         plt.savefig(os.path.join(self.output_dir, "redχ2_tot.pdf"), format='pdf')
@@ -351,20 +377,15 @@ class QualityFactorAnalysis:
             if f > 2:
                 for j in range(len(Model_phase)):
                     redchi2_phase[j] = self.red_chi2(apfu_obs_idx, Model_phase[j, idx_phase], obs_err_idx, f)
-                title = 'Reduced χ2 '
-                min_redchi2_phase = self.plot_redchi2_phase(redchi2_phase, i, title)
-                print("The number of elements in " + self.phase_name[i-1] + " is:", f)
+                min_redchi2_phase = self.plot_redchi2_phase(redchi2_phase, i, f)
                 
             else:
                 for j in range(len(Model_phase)):
                     redchi2_phase[j] = self.chi2(apfu_obs_idx, Model_phase[j, idx_phase], obs_err_idx)
-                title = 'χ2 '
-                min_redchi2_phase = self.plot_redchi2_phase(redchi2_phase, i, title)
-                print("The number of elements in " + self.phase_name[i-1] + " is:", f)
-                print('The minimum value of the χ2 for ' + self.phase_name[i-1] + ' is: ', min_redchi2_phase)
+                min_redchi2_phase = self.plot_redchi2_phase(redchi2_phase, i, f)
                 min_redchi2_phase = 1 + min_redchi2_phase
                 if f == 1:
-                    print('WARNING: The number of elements in ' + self.phase_name[i-1] + ' is 1, the χ2 may not be accurate')
+                    print('WARNING: The number of elements in', self.phase_name[i-1], 'is 1, the χ2 may not be accurate')
 
             redchi2_phase_tot[:, i-1] = redchi2_phase
             self.min_redchi2 = np.append(self.min_redchi2, min_redchi2_phase)
@@ -385,7 +406,7 @@ class QualityFactorAnalysis:
         return min_redchi2_tot
 
     def Qcmp_tot(self, Qcmp_phase_tot, redchi2_phase_tot):
-        """Calculate the total quality factor (Qcmp_tot) for the modelled composition."""
+        """Calculate the total quality factor (Q*cmp) for the modelled composition."""
 
         # Ensure phase_id exists and is part of self
         if self.phase_id is None:
@@ -410,14 +431,14 @@ class QualityFactorAnalysis:
         # Accessing the redchi2_phase at the location of the maximum Qcmp_allphases_weight
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
 
-        print("The reduced χ2 values for the phases at the maximum total Qcmp is:", Qcmpmax_redchi2_value)
+        print("The reduced χ2 values for the phases at the maximum Q*cmp is:", Qcmpmax_redchi2_value)
 
         # Plot the results
         self.plot_tot(Qcmp_allphases, "Unweighted")
 
 
     def Qcmp_tot_weight(self, Qcmp_phase_tot, redchi2_phase_tot):
-        """Calculate the weighted total quality factor (Qcmp_tot_weight) for the modelled composition."""
+        """Calculate the weighted total quality factor (Q*cmp_weight) for the modelled composition."""
 
         # Calculate weight based on the minimum reduced χ2 value of each phase
         self.min_redchi2[self.min_redchi2 < 1] = 1
@@ -440,7 +461,7 @@ class QualityFactorAnalysis:
 
         # Accessing the redchi2_phase at the location of the maximum Qcmp_allphases_weight
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
-        print("The reduced χ2 values for the phases at the maximum total Qcmp are:", Qcmpmax_redchi2_value)
+        print("The reduced χ2 values for the phases at the maximum Q*cmp are:", Qcmpmax_redchi2_value)
 
         # Plot the results
         self.plot_tot(Qcmp_allphases_weight, "Weighted")
