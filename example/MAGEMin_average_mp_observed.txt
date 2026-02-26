@@ -1,0 +1,15 @@
+# text
+#
+# Examples of available colour schemes: viridis, plasma, inferno, magma, cividis, copper, spring
+#
+# Sample name: average metapelite
+# Assemblage: garnet + muscovite + biotite
+# Compositions are taken from the model at 510 °C, 1.015 GPa for benchmark
+
+Grt_Mg	Grt_Mn	Ms_Si	Ms_Mg	Ms_K	Bt_Mg	Bt_Si	Bt_Mn
+0.117	0.58	3.15	0.082	0.85	1.017	2.87	0.015
+-
+WDS spot
+
+Colour scheme:
+viridis

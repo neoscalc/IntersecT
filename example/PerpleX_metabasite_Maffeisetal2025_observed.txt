@@ -1,0 +1,18 @@
+# text
+#
+#
+#
+# Examples of available colour schemes: viridis, plasma, inferno, magma, cividis, copper, spring
+#
+# Sample name: GP21-1B from Maffeis et al. 2025 Lithos https://doi.org/10.1016/j.lithos.2025.107981
+# Assemblage at peak pressure: garnet + omphacite + coesite (+ glaucophane?)
+# Explanation of IntersecT results and interpretation in Nerone et al. 2025 Computers&Geosciences https://doi.org/10.1016/j.cageo.2025.105949
+
+Grt_Mg	Grt_Ca	Grt_Fe	Grt_Mn	Omp_Al	Omp_Na	Omp_Ca	Omp_Mg	Omp_Fe	Gln_Na	Gln_Mg	Gln_Fe	Coe_Si
+0.281	0.321	2.407	0.042	0.253	0.640	0.337	0.281	0.488	1.831	2.160	1.939	1.001
+-
+EDS
+
+
+Colour scheme:
+viridis

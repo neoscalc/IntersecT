@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyIntersecT"
-version = "0.0.2"
+version = "0.1.0"
 description = "Quantitative isopleth thermobarometry from PerpleX"
 authors = [{name = "Sara Nerone", email = "sara.nerone@unito.it"}]
 license = {file = "LICENSE"}

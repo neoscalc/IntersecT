@@ -1,0 +1,698 @@
+# Mapping of IMA-CNMNC mineral symbols (Warr, 2021)
+# to Thermocalc / MAGEMin and PerpleX mineral abbreviations
+#
+# Source:
+# Warr, L. N. (2021) IMA-CNMNC approved mineral symbols.
+# Mineralogical Magazine, 85, 291-320.
+# doi:10.1180/mgm.2021.43
+
+["MAGEMin to Warr2021"]
+
+# --- SiO2 polymorphs ---
+q   = "Qz"       # Quartz
+trd  = "Trd"     # Tridymite
+crst  = "Crs"    # Cristobalite
+coe  = "Coe"     # Coesite
+stv  = "Sti"     # Stishovite
+
+# --- Al2SiO5 polymorphs ---
+ky   = "Ky"      # Kyanite
+sill  = "Sil"    # Sillimanite
+and  = "And"     # Andalusite
+
+# --- Oxides ---
+ru   = "Rt"      # Rutile
+sph  = "Ttn"     # Titanite (sphene)
+spi = "Spl"      # Spinel
+spl  = "Spl"     # Spinel
+cm  = "Chr"      # Chromite
+usp  = "Uspl"    # Uvospinel
+mgt  = "Mag"      # Magnetite
+sp  =  "Spl"     # Spinel
+mt   = "Mag"      # Magnetite
+hem = "Hem"      # Hematite
+hemm = "Hem"     # Hematite
+ilm  = "Ilm"     # Ilmenite
+ilmm = "Ilm"     # Ilmenite
+cor  = "Crn"     # Corundum
+crn = "Crn"      # Corundum (Mg-Al)
+co = "Crn"       # Corundum
+fp   = "Fper"    # ferropericlase
+mw = "Fper"      # magnesiowüstite
+
+# --- Feldspars & feldspathoids ---
+pl4T   = "Pl"     # Ternary feldspar (plagioclase)
+pl4Tr  = "Pl"     # Ternary feldspar (plagioclase)
+plg = "Pl"        # Ternary feldspar (plagioclase)
+fsp = "Fsp"       # Ternary feldspar (general)
+pl = "Pl"         # Plagioclase
+neph = "Nph"      # Nepheline
+ne = "Nph"        # Nepheline
+nph  = "Nph"      # Nepheline
+"K-nph" = "K-Nph"   # K-rich nepheline 
+kals  = "Kls"     # Kalsilite
+lct  = "Lct"      # Leucite
+mel  = "Mll"      # Melilite
+afs = "Kfs"       # K-feldspar
+ab = "Ab"         # Albite
+
+# --- Hydroxides ---
+br   = "Brc"       # Brucite
+
+# --- Sheet silicates ---
+atg  = "Atg"      # Antigorite
+t    = "Tlc"      # Talc
+ta   = "Tlc"      # Talc
+bi   = "Bt"       # Biotite
+mu   = "Ms"       # Muscovite
+pat  = "Pg"       # Paragonite
+ma   = "Mrg"       # Margarite
+chl  = "Chl"      # Chlorite
+ctd  = "Cld"      # Chloritoid
+gph = "Gr"        # Graphite
+prl = "Prl"       # Pyrophillite  
+
+# --- Aluminuous silicates ---
+cd  = "Crd"       # Cordierite
+st   = "St"       # Staurolite
+sa   = "Spr"       # Sapphirine
+ep   = "Ep"       # Epidote
+g   = "Grt"       # Garnet
+gtmj = "Grt"      # Garnet (majorite)
+maj = "Maj"       # Majorite
+uv = "Uv"         # Uvarovite
+knor = "Krr"      # Knorringite
+
+# --- Pyroxenes ---
+opx  = "Opx"      # Orthopyroxene
+hpx = "HP-Cpx"    # High-P orthopyroxene
+hpcpx = "HP-Cpx"  # High-P orthopyroxene
+cpx  = "Cpx"      # Clinopyroxene
+"Na-cpx" = "Cpx"    # Na-rich cpx
+dio  = "Di"       # Diopside
+omph = "Omp"      # Omphacite
+jd   = "Jd"       # Jadeite
+aug = "Aug"       # Augite
+pig = "Pgt"       # Pigeonite
+
+# --- Amphiboles ---
+amp  = "Amp"     # Clinoamphibole
+oamp = "Oamp"    # Orthoamphibole
+ged = "Ged"      # Gedrite
+anth  = "Ath"    # Anthophyllite
+gl = "Gln"       # Glaucophane
+act = "Act"      # Actinolite
+cumm = "Cum"     # Cummingtonite
+tr = "Tr"        # Tremolite
+
+# --- Olivine and high-P polymorphs ---
+ol   = "Ol"      # Olivine
+wad  = "Wds"     # Fe-Mg Wadsleyite
+wa = "Wds"       # Wadsleyite
+ring  = "Rwd"    # Fe-Mg Ringwoodite
+ri = "Rwd"       # Ringwoodite
+fo = "Fo"        # Forsterite
+fa = "Fa"        # Fayalite
+teph = "Tep"     # Tephroite
+lrn = "Lrn"      # Larnite
+mont = "Mtc"     # Monticellite
+
+# --- Humite ---
+chum = "Chu"     # Clinohumite
+ch = "Chu"       # Clinohumite
+chdr = "Chn"     # Chondrodite
+
+# --- Mantle phases ---
+mpv   = "Prv"     # MgSi-perovskite (bridgmanite)
+cpv = "CaPrv"     # CaSi-perovskite
+capv = "CaPrv"    # CaSi-perovskite
+pv = "Prv"        # perovskite
+ppv = "Pprv"      # postperovskite
+nal  = "Nal"      # New aluminium phase
+cf   = "Cfr"      # Ca-ferrite phase
+ak  = "Ak"        # Akermanite
+aki = "Aki"       # Akimotoite
+
+# --- Osumilite ---
+osma = "Osm"     # Osumilite
+osmm = "Osm-Mg"  # Osumilite-(Mg)
+
+# --- Sulfides ---
+pyr  = "Py"     # Pyrite
+po   = "Pyh"      # Pyrrhotite
+
+# --- Fluids & melts ---
+liq  = "Liq"     # Silicate melt
+fl   = "Fl"      # Aqueous fluid
+fluid = "Fluid"  # Generic fluid phase
+H2O = "H2O"      # Water
+
+# --- Carbonates ---
+occm = "Carb"    # General carbonate
+sid = "Sd"       # Siderite
+ank = "Ank"      # Ankerite
+mag = "Mgs"      # Magnesite
+cc = "Cal"       # Calcite
+
+# --- Others ---
+vsv = "Ves"      # Vesuvianite
+mul = "Mul"      # Mullite
+zo = "Zo"        # Zoisite
+law = "Lws"      # Lawsonite
+pre = "Prh"      # Prehnite
+mpm = "Pmp"      # Pumpellyite (MgAl)
+abc = "abc"      # abc
+
+
+
+
+
+["Perplex to Warr2021"]
+
+# --- Solid solutions ---
+# organised as: abbreviation - solution models - full name
+
+TiCh = "Chu"                # clinohumite
+"TiCh(PL)" = "Chu"
+"TiChdr(B)" = "Chu"
+Chu = "Chu"
+Chum = "Chu"
+clinohumite = "Chu"
+
+Fsp = "Fsp"                 # ternary-feldspar
+feldspar = "Fsp"
+feldspar_B = "Fsp"
+"Fsp(C1)" = "Fsp"
+"Fsp(HGP)" = "Fsp"
+"ternary-feldspar" = "Fsp"
+
+Amph = "Amp"                # clinoamphibole
+"cAmph_I(G)" = "Amp" 
+"cAmph(G)" = "Amp"
+"Act(M)" = "Amp"
+"cAmph(DP)" = "Amp"
+"cAmph_I(DP)" = "Amp"
+GlTrTsMr = "Amp"
+"Ca-Amph(D)" = "Amp" 
+"Na-Amph(D)" = "Amp" 
+GlTrTsPg = "Amp" 
+"Amph(DHP)" = "Amp"
+"Amph(DPW)" = "Amp"
+Cumm = "Cum"               # cummingtonite
+Gl = "Gl"                   # glaucophane
+Tr = "Tr"                   # tremolite
+clinoamphibole = "Amp"
+
+Cpx = "Cpx"                 # clinopyroxene
+"Cpx_I(HGP)" = "Cpx"  
+"Cpx(HGP)" = "Cpx"  
+"Augite(G)" = "Cpx"  
+"Cpx(JH)" = "Cpx"  
+"Cpx(l)" = "Cpx"  
+"Cpx(h)" = "Cpx"  
+"Cpx(stx)" = "Cpx"  
+"Cpx(stx7)" = "Cpx"  
+"Omph(HP)" = "Cpx"  
+"Cpx(HP)" = "Cpx"  
+"Cpx(m)" = "Cpx"  
+"Cpx(stx8)" = "Cpx"  
+"Omph(GHP)" = "Cpx"  
+"Cpx(TH)" = "Cpx"  
+clinopyroxene = "Cpx"
+
+F = "Fluid"                 # fluid
+"Aqfl(HGPK)" = "Fluid"  
+"F(salt)" = "Fluid"  
+GCOHF = "Fluid"  
+COHF = "Fluid"  
+"Si-Fluid" = "Fluid"  
+"COH-Fluid" = "Fluid"  
+"COH-Fluid+" = "Fluid"  
+WADDAH = "Fluid"  
+"C-H-Fluid" =  "Fluid"  
+"HOS-Fluid" =  "Fluid"  
+"HO-Fluid" =  "Fluid"  
+fluid =  "Fluid"  
+
+Melt = "Liq"                # liquid
+"melt(HGPH)" = "Liq"  
+"melt(G)" = "Liq"  
+"Melt(JH)" = "Liq"  
+"Melt(A)" = "Liq"  
+"Melt(B)" = "Liq"  
+"melt(W)" = "Liq"  
+"pMELTS(G)" = "Liq"  
+"mMELTS(G)" = "Liq"  
+"MELTS(GS)" = "Liq"  
+casmelt = "Liq"  
+FeS_liq = "Liq"  
+"melt(HP)" = "Liq"  
+"melt(TH)" = "Liq"
+Liq = "Liq" 
+FeSi_liq = "Liq" 
+FeSiC_liq = "Liq"
+"LIQ(NK)" = "Liq"
+"LIQ(EF)" = "Liq"
+"FeCr(liq)" = "Liq"
+FeCliq = "Liq"
+"melt(SP)" = "Liq"
+liquid = "Liq"  
+
+Chl = "Chl"                 # chlorite
+"Chl(W)" = "Chl"   
+"Chl(HP)" = "Chl" 
+"Chl(LWV)" = "Chl" 
+chlorite = "Chl"
+
+Ep = "Ep"                   # epidote
+"Ep(HP11)" = "Ep"
+"Ep(HP)" = "Ep" 
+epidote = "Ep" 
+
+Ol = "Ol"                   # olivine
+"O(JH)" = "Ol" 
+"O(SG)" = "Ol" 
+"O(HP)" = "Ol" 
+"O(HPK)" = "Ol" 
+"O(stx)" = "Ol" 
+"O(stx7)" = "Ol" 
+"Ol(m)" = "Ol" 
+"O(stx8)" = "Ol" 
+"O(HGP)" = "Ol" 
+olivine = "Ol" 
+
+Sp = "Spl"                  # spinel
+"Sp(JH)" = "Spl" 
+GaHcSp = "Spl" 
+"Sp(JR)" = "Spl" 
+"Sp(GS)" = "Spl" 
+"Sp(HP)" = "Spl" 
+"Sp(stx)" = "Spl" 
+CrSp = "Spl" 
+"Sp(stx7)" = "Spl" 
+"Sp(WPC)" = "Spl" 
+"Sp_II(WPC)" = "Spl" 
+"Sp(stx8)" = "Spl" 
+"Sp(HGP)" = "Spl" 
+"Sp(TH)" = "Spl"
+Mt = "Mag"
+MF = "Mag"
+"Mt(W)" = "Mag"
+"MtUl(A)" = "Mag"
+spinel = "Spl"
+
+Pl = "Pl"                   # binary-feldspar, Fsp for generic phase
+"Pl(JH)" = "Pl" 
+"Pl(h)" = "Pl" 
+"Pl(I1,HP)" = "Pl" 
+"Pl(stx8)" = "Pl" 
+lAb = "Pl"
+"lAb(HGP)" = "Pl"
+Mic = "Mcc"
+Kf = "Mcc"
+San = "Sa"
+"San(TH)" = "Sa"
+"binary-feldspar" = "Fsp"
+
+Gt = "Grt"                  # garnet
+"Grt(JH)" = "Grt" 
+"Gt(W)" = "Grt" 
+CrGt = "Grt" 
+"Gt(MPF)" = "Grt" 
+"Gt(B)" = "Grt" 
+"Gt(GCT)" = "Grt" 
+"Gt(HP)" = "Grt" 
+"Gt(EWHP)" = "Grt" 
+"Gt(WPH)" = "Grt" 
+"Gt(stx)" = "Grt" 
+"Gt(stx8)" = "Grt" 
+"Gt(WPPH)" = "Grt" 
+Maj = "Grt" 
+"Gt(H)" = "Grt" 
+"Gt(HGP)" = "Grt" 
+"ZrGt(KP)" = "Grt" 
+"Gt(TH)" = "Grt" 
+"YGt(SP)" = "Grt" 
+garnet = "Grt"
+
+Opx = "Opx"                 # orthopyroxene
+"Opx(JH)" = "Opx" 
+"Opx(W)" = "Opx" 
+"Opx(HP)" = "Opx" 
+"CrOpx(HP)" = "Opx" 
+"Opx(stx)" = "Opx" 
+"Opx(stx8)" = "Opx" 
+"Opx(HGP)" = "Opx" 
+"Opx(TH)" = "Opx" 
+orthopyroxene = "Opx" 
+
+Mica = "Mca"                # white-mica
+"Mica(W)" = "Mca"
+"Pheng(HP)" = "Mca"
+"Mica(CF)" = "Mca"
+"Mica(CHA1)" = "Mca"
+"Mica(CHA)" = "Mca"
+"Mica+(CHA)" = "Mca" 
+"Mica(M)" = "Mca" 
+"Mica(SGH)" = "Mca"
+Ma = "Ma" 
+MaPa = "Ma"
+"white-mica" = "Mca"
+
+Ctd = "Cld"                 # chloritoid
+"Ctd(W)" = "Cld" 
+"Ctd(HP)" = "Cld" 
+"Ctd(SGH)" = "Cld" 
+chloritoid = "Cld" 
+
+St = "St"                   # staurolite
+"St(W)" = "St" 
+"St(HP)" = "St"
+staurolite = "St"
+
+Bio = "Bt"                  # biotite
+"Bi(W)" = "Bt" 
+"Bi(HGP)" = "Bt" 
+"Bio(TCC)" = "Bt" 
+"Bio(D)" = "Bt" 
+"Bio(WPH)" = "Bt" 
+"Bio(HP)" = "Bt" 
+biotite = "Bt" 
+
+Crd = "Crd"                 # cordierite
+"Crd(W)" = "Crd"
+"Crd(HGP)" = "Crd"
+hCrd = "Crd"
+cordierite = "Crd"
+
+Sap = "Spr"                 # sapphirine
+"Sa(WP)" = "Spr" 
+"Sapp(TP)" = "Spr" 
+"Sapp(HP)" = "Spr" 
+"Sapp(KWP)" = "Spr" 
+sapphirine = "Spr" 
+
+Pu = "Pmp"                  # pumpellyite
+"Pu(M)" = "Pmp"
+pumpellyite = "Pmp"
+
+Osm = "Osm"                 # osumilite
+"Osm(HP)" = "Osm" 
+"Osm(HP11)" = "Osm" 
+osumilite = "Osm" 
+
+Scp = "Scp"                 # scapolite
+"Scap(RP)" = "Scp"
+"Scap(KA)" = "Scp"
+scapolite = "Scp"
+
+Crp = "Car"                 # carpholite
+Carp = "Car" 
+"Carp(SGH)" = "Car"
+"Carp(M)" = "Car"
+carpholite = "Car" 
+
+Sud = "Sud"                 # sudoite
+"Sud(Livi)" = "Sud"
+"Sud(M)" = "Sud"
+sudoite = "Sud"
+
+oAmph = "Oamp"              # orthoamphibole
+Anth = "Oamp" 
+A = "Oamp" 
+"oAmph(DP)" = "Oamp" 
+"o-Amph" = "Oamp" 
+orthoamphibole = "Oamp" 
+
+Stlp = "Stp"                # stilpnomelane
+"Stlp(M)" = "Stp"
+stilpnomelane = "Stp"
+
+Do = "Dol"                  # carbonate (Dol, Mgs, Cal), Carb for generic phase
+"Do(HP)" = "Dol" 
+"Do(AE)" = "Dol" 
+"oCcM(HP)" = "Dol" 
+DoDo = "Dol" 
+"oCcM(EF)" = "Dol"
+Mag = "Mgs" 
+"M(HP)" = "Mgs"
+Cc = "Cal" 
+"Cc(AE)" = "Cal" 
+"Carb(M)" = "Cal" 
+"dis(EF)" = "Cal" 
+carbonate = "Carb" 
+
+Ilm = "Ilm"                 # ilmenite
+"IlHm(A)" = "Ilm"
+IlGkPy = "Ilm"
+"Ilm(WPH)" = "Ilm"
+"Ilm(DS6)" = "Ilm"
+Aki = "Aki"                 # akimotoite
+"Aki(fab)" = "Aki" 
+"Aki(stx7)" = "Aki"
+"Aki(stx8)" = "Aki"
+"Aki(H)" = "Aki"
+Esk = "Esk"                 # eskolaite
+"Eskol(C)" = "Esk"
+ilmenite = "Ilm"
+
+Neph = "Nph"                # feldspathoid
+"Neph(FB)" = "Nph"
+feldspathoid = "Nph"
+
+Br = "Brc"                  # brucite
+B = "Brc"
+brucite = "Brc"
+
+Tour = "Tur"                # tourmaline
+"Tour(V)" = "Tur"
+tourmaline = "Tur"
+
+Wus = "Wus"                 # wustite
+"Wus(fab)" = "Wus" 
+"Wus(stx7)" = "Wus"
+wuestite = "Wus" 
+
+Pv = "Prv"                  # perovskite
+"Pv(fab)" = "Prv"
+"Pv(stx7)" = "Prv"
+Mpv = "Prv"                 # Mg-Si perovskite
+"Mpv(H)" = "Prv"
+MgSi = "Prv"
+Cpv = "CaPrv"               # Ca-Si perovskite
+"Cpv(H)" = "CaPrv"
+CaSi = "CaPrv"
+perovskite = "Prv"
+
+Ppv = "Pprv"                # postperovskite
+"Ppv(og)" = "Pprv"
+"Ppv(stx8)" = "Pprv"
+postperovskite = "Pprv"
+
+Wad = "Wds"                 # wadsleyite
+"Wad(stx)" = "Wds" 
+"Wad(stx7)" = "Wds" 
+"Wad(stx8)" = "Wds"
+"Wad(H)" = "Wds"
+Wd = "Wds"
+hWd = "Wds"
+wadleysite = "Wds"
+
+Ring = "Rwd"                # ringwoodite
+"Ring(stx)" = "Rwd" 
+"Ring(stx7)" = "Rwd" 
+"Ring(stx8)" = "Rwd"
+"Ring(H)" = "Rwd"
+Rg = "Rwd"
+hRg = "Rwd"
+ringwoodite = "Rwd" 
+
+Po = "Pyh"                  # pyrrhotite
+"Po(HP)" = "Pyh"
+"Po(SE)" = "Pyh"
+pyrrhotite = "Pyh"
+
+CF = "Cfr"                  # calcium-ferrite
+"CF(stx8)" = "Cfr" 
+CFer = "Cfr"
+"CFer(H)" = "Cfr" 
+"Ca-ferrite" = "Cfr"
+"calcium-ferrite" = "Cfr"
+
+Fper = "Fper"               # ferropericlase
+"Fper(H)" = "Fper"
+ferropericlase = "Fper"
+
+Cor = "Crn"                 # corundum
+"Cor(H)" = "Crn"
+Corundum = "Crn"
+
+NAl = "Nal"                 # New aluminium phase
+"NAl(H)" = "Nal"
+"New aluminous phase" = "Nal"
+
+Hpx = "HP-Cpx"                # HP_clinopyroxene
+"Hpx(H)" = "HP-Cpx"
+HP_clinopyroxene = "HP-Cpx"
+
+Tlc = "Tlc"                 # talc
+T = "Tlc"
+talc = "Tlc"
+
+Atg = "Atg"                 # serpentine (Atg, Liz), Srp for generic phase
+"Atg(PN)" = "Atg"
+"Atg(LE)" = "Atg"
+Liz = "Liz"
+"Liz(LE)" = "Liz"
+serpentine = "Srp"
+
+mz = "Mnz"                  # monazite
+"Mnz(SP)" = "Mnz"
+monazite = "Mnz"
+
+
+# --- Pure phases ---
+
+ak = "Ak"       # akermanite
+alm = "Alm"     # almandine
+and = "And"     # andalusite
+andr = "Andr"   # andradite
+chum = "Chu"    # clinohumite
+cz = "Czo"      # clinozoisite
+crd = "Crd"     # cordierite
+ep = "Ep"       # epidote(ordered)
+fa = "Fa"       # fayalite
+fo = "Fo"       # forsterite
+geh = "Gh"      # gehlenite
+gr = "Grs"      # grossular
+hcrd = "Crd"    # hydrouscordierite
+mncrd = "Crd"   # Mn-cordierite
+tpz = "Tpz"     # hydroxy-topaz
+ky = "Ky"       # kyanite
+larn = "Lrn"    # larnite-bredigite
+law = "Lws"     # lawsonite
+merw = "Mw"     # merwinite
+mctd = "Cld"    # Mg-chloritoid
+mnctd = "Cld"   # Mn-chloritoid
+mst = "St"      # Mg-staurolite
+mnst = "St"     # Mn-staurolite
+mont = "Mtc"    # monticellite
+osm1 = "Osm"    # osumilite(1)
+osm2 = "Osm"    # osumilite(2)
+pump = "Pmp"    # pumpellyite
+py = "Prp"      # pyrope
+rnk = "Rnk"     # rankinite
+sill = "Sil"    # sillimanite
+spss = "Sps"    # spessartine
+sph = "Ttn"     # sphene / titanite
+spu = "Spu"     # spurrite
+teph = "Tep"    # tephroite
+ty = "Tly"      # tilleyite
+vsv = "Ves"     # vesuvianite
+zrc = "Zrn"     # zircon
+zo = "Zo"       # zoisite
+di = "Di"       # Diopside
+en = "En"       # enstatite
+fs = "Fs"       # ferrosilite
+hed = "Hd"      # hedenbergite
+jd = "Jd"       # jadeite
+pswo = "Pwo"    # pseudowollastonite
+pxmn = "Pxm"    # pyroxmangite
+rhod = "Rdn"    # rhodonite
+wo = "Wo"       # wollastonite
+anth = "Ath"    # anthophyllite
+cumm = "Cum"    # cummingtonite
+fanth = "Ath"   # Fe-anthophyllite
+fgl = "Gln"     # Fe-glaucophane
+ftr = "Act"     # ferroactinolite
+ged = "Ged"     # gedrite(Na-free)
+gl = "Gln"      # glaucophane
+grun = "Gru"    # grunerite
+parg = "Prg"    # pargasite
+rieb = "Rbk"    # riebeckite
+tr = "Tr"       # tremolite
+ts = "Tsr"      # tschermakite
+deer = "Dee"    # deerite
+fcar = "Car"    # fe-carpholite
+mcar = "Car"    # mg-carpholite
+fspr = "Spr"    # fe-sapphirine(793)
+spr4 = "Spr"    # sapphirine(442)
+spr7 = "Spr"    # sapphirine(793)
+ann = "Ann"     # annite
+cel = "Cel"     # celadonite
+fcel = "Cel"    # Fe-celadonite
+east = "Eas"    # eastonite
+ma = "Mrg"      # margarite
+mnbi = "Bt"     # Mn-biotite
+mu = "Ms"       # muscovite
+phl = "Phl"     # phlogopite
+naph = "Phl"    # Na-phlogopite
+pa = "Pg"       # paragonite
+afchl = "Chl"   # Al-free chlorite
+ames = "Ame"    # amesite(14Ang)
+clin = "Clc"    # clinochlore(ordered)
+fsud = "Sud"    # Fe-sudoite
+mnchl = "Chl"   # Mn-chlorite
+sud = "Sud"     # Sudoite
+atg = "Atg"     # antigorite
+chr = "Ctl"     # chrysotile
+fta = "Tlc"     # Fe-talc
+ta = "Tlc"      # talc
+kao = "Kln"     # Kaolinite
+pre = "Prh"     # prehnite
+prl = "Prl"     # pyrophyllite
+tats = "Tlc"    # tschermak-talc
+ab = "Ab"       # albite
+an = "An"       # anorthite
+coe = "Coe"     # coesite
+crst = "Crs"    # cristobalite
+heu = "Hul"     # heulandite
+abh = "Ab"      # high-albite
+kals = "Kls"    # kalsilite
+lmt = "Lmt"     # laumontite
+lc = "Lct"      # leucite
+me = "Me"       # meionite
+mic = "Mcc"     # microcline
+ne = "Nph"      # nepheline
+q = "Qz"        # quartz
+san = "Sa"      # sanidine
+stlb = "Stb"    # stilbite
+stv = "Sti"     # stishovite
+trd = "Trd"     # tridymite
+wrk = "Wrk"     # wairakite
+bdy = "Bdy"     # baddeleyite
+cor = "Crn"     # corundum
+geik = "Gk"     # geikielite
+hem = "Hem"     # hematite
+herc = "Hc"     # hercynite
+ilm = "Ilm"     # ilmenite
+lime = "Lm"     # lime
+mft = "Mfr"     # magnesioferrite
+mt = "Mag"      # magnetite
+mang = "Mng"    # manganosite
+per = "Per"     # periclase
+pnt = "Pph"     # pyrophanite
+ru = "Rt"       # rutile
+sp = "Spl"      # spinel
+usp = "Uspl"    # ulvospinel
+br = "Brc"      # brucite
+dsp = "Dsp"     # diaspore
+gth = "Gth"     # goethite
+ank = "Ank"     # ankerite
+arag = "Arg"    # aragonite
+cc = "Cal"      # calcite
+dol = "Dol"     # dolomite
+mag = "Mgs"     # magnesite
+rhc = "Rds"     # rhodochrosite
+sid = "Sd"      # siderite
+diam = "Dia"    # diamond
+gph = "Gr"      # graphite
+pyr = "Py"      # pyrite
+iron = "Fe"     # iron
+Ni = "Ni"       # nickel
+CO2 = "CO2"     # carbon dioxide
+CO = "CO"       # carbon monoxide
+H2 = "H2"       # hydrogen
+CH4 = "CH4"     # methane
+O2 = "O2"       # oxygen
+H2O = "H2O"     # water
