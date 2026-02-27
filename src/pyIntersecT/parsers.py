@@ -174,7 +174,7 @@ def parse_table(path: str | Path,
         try:
             try:
                 df = pd.read_csv(path, sep=None, engine="python", encoding="utf-8")
-            except:
+            except Exception as e:
                 df = pd.read_csv(path, sep=None, engine="python", encoding="latin1")
 
         except Exception as e:
@@ -203,7 +203,8 @@ def parse_table(path: str | Path,
             try:
                 df = pd.read_csv(path, sep=None, engine="python", comment="#", encoding="latin-1")
                 tried_sep = "sniff"
-            except Exception:
+            except Exception as e:
+                logger.warning("Failed to auto-detect separator: %s; falling back to whitespace", e)
                 df = pd.read_csv(path, sep=r"\s+", engine="python", comment="#", encoding="latin-1")
                 tried_sep = "whitespace_final"
 

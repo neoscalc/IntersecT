@@ -17,6 +17,8 @@ from .mineral_aliases import MineralAliases, discriminate_solvus
 class QualityFactorAnalysis:
     
     def __init__(self, mineral_symbols_toml: Optional[Path] = None):
+        
+        
         # Core data structures
         self.data = pd.DataFrame()  # Legacy compatibility
         self.labels = []
@@ -51,6 +53,28 @@ class QualityFactorAnalysis:
             mineral_symbols_toml = Path(__file__).parent / "mineral_symbols.toml"
         self.aliases = MineralAliases(mineral_symbols_toml)
         
+        # Quality factor constants
+        self.MIN_COEFF_ERR = 1
+        self.MAX_COEFF_ERR = 6
+        self.MIN_ERROR_THRESHOLD = 0.01
+        
+        # EDS analysis: calc_err = 0.0703 * apfu^0.3574
+        self.EDS_COEFF = 0.0703
+        self.EDS_EXPONENT = 0.3574
+        self.EDS_MIN_ERR = 0.01
+        self.EDS_MAX_ERR = 0.1
+        
+        # WDS map analysis: calc_err = 0.0434 * apfu^0.3451
+        self.WDS_MAP_COEFF = 0.0434
+        self.WDS_MAP_EXPONENT = 0.3451
+        self.WDS_MAP_MIN_ERR = 0.005
+        self.WDS_MAP_MAX_ERR = 0.05
+        
+        # WDS spot analysis: calc_err = 0.023 * apfu^0.2772
+        self.WDS_SPOT_COEFF = 0.023
+        self.WDS_SPOT_EXPONENT = 0.2772
+        self.WDS_SPOT_MIN_ERR = 0.005
+        self.WDS_SPOT_MAX_ERR = 0.05
 
     @classmethod
     def from_default_symbols(cls):
@@ -86,7 +110,7 @@ class QualityFactorAnalysis:
         else:
             self.output_dir = str(Path(path).expanduser().resolve())
         
-        self._log_print("The output directory is:  " + self.output_dir)
+        self._log_print(f"The output directory is: {self.output_dir}")
         self._setup_logging()
 
     def load_model_output(self, coord_columns: Optional[Sequence[str]] = None, 
@@ -98,7 +122,7 @@ class QualityFactorAnalysis:
             if not filename:
                 return
 
-        self._log_print("The data file is:  " + filename)
+        self._log_print(f"The data file is: {filename}")
 
         self.model_blocks = parse_table(filename, coord_columns=coord_columns)
 
@@ -122,6 +146,7 @@ class QualityFactorAnalysis:
                         phc["phase"] = resolved_name
                         phc["orig_phase"] = original_phase_name
                     except KeyError:
+                        logging.warning(f"Phase '{original_phase_name}' not found in aliases for system '{system}'")
                         phc["orig_phase"] = original_phase_name
 
                     phases.append(phc)
@@ -137,7 +162,7 @@ class QualityFactorAnalysis:
                     total_transformations[key] = total_transformations.get(key, 0) + count
 
             # Log transformation statistics
-            self._log_print("\n" + "-"*60)
+            self._log_print(f"\n{'-'*60}")
             self._log_print("Phase discrimination summary:")
 
             # Group by parent phase and sort
@@ -158,7 +183,7 @@ class QualityFactorAnalysis:
                         percentage = (count / total_count) * 100
                         self._log_print(f"  {parent} → {assigned} : {count} ({percentage:.1f}%)")
 
-            self._log_print("-"*60 + "\n")
+            self._log_print(f"{'-'*60}\n")
         
 
     def suggest_plot_coordinates(self):
@@ -263,6 +288,55 @@ class QualityFactorAnalysis:
 
         return None, None
 
+    def _convert_coordinate_scalar(self, value: float, name: str) -> float:
+        """
+        Convert a single coordinate value to standard units.
+        
+        Args:
+            value: Single coordinate value
+            name: Coordinate column name
+            
+        Returns:
+            Converted value
+        """
+        # Use array version and extract scalar
+        converted_array, _ = self._convert_coordinate(np.array([value]), name)
+        return converted_array[0]
+
+    def _convert_coordinate(self, values: np.ndarray, name: str) -> tuple[np.ndarray, str]:
+        """
+        Convert coordinate values to standard units.
+        
+        Converts temperature from Kelvin to Celsius and pressure from bar/kbar to GPa.
+        
+        Args:
+            values: Coordinate values array
+            name: Coordinate column name
+            
+        Returns:
+            Tuple of (converted_values, converted_name)
+        """
+        name_lower = name.lower()
+        
+        # Temperature: T(K) or T[K] variants, convert to Celsius
+        if "t(k)" in name_lower or "t[k]" in name_lower or (("temp" in name_lower or name_lower == "t") and "k" in name_lower):
+            return values - 273, "T(°C)"
+        
+        # Temperature: Already in Celsius but with bracket notation
+        if "t[°c]" in name_lower or "t[c]" in name_lower:
+            return values, "T(°C)"
+        
+        # Pressure in bar: P(bar) or variants, excluding kbar
+        if "p(bar)" in name_lower or (("p" in name_lower or "pressure" in name_lower) and "bar" in name_lower and "kbar" not in name_lower):
+            return values / 10000, "P(GPa)"
+        
+        # Pressure in kbar: P[kbar] or variants containing kbar
+        if "p[kbar]" in name_lower or "kbar" in name_lower:
+            return values / 10, "P(GPa)"
+        
+        # No conversion needed
+        return values, name
+
     def set_plot_coordinates(self, xname: str, yname: str):
         """Set coordinate columns for plotting and build x, y arrays."""
         self.coords_x = xname
@@ -297,34 +371,11 @@ class QualityFactorAnalysis:
         # Initialize labels with original coordinate names
         self.labels = [xname, yname]
 
-        # Helper function to detect and convert coordinates
-        def convert_coordinate(values, name):
-            name_lower = name.lower()
-            
-            # Temperature: T(K) or T[K] variants, convert to Celsius
-            if "t(k)" in name_lower or "t[k]" in name_lower or (("temp" in name_lower or name_lower == "t") and "k" in name_lower):
-                return values - 273, "T(°C)"
-            
-            # Temperature: Already in Celsius but with bracket notation
-            if "t[°c]" in name_lower or "t[c]" in name_lower:
-                return values, "T(°C)"
-            
-            # Pressure in bar: P(bar) or variants, excluding kbar
-            if "p(bar)" in name_lower or (("p" in name_lower or "pressure" in name_lower) and "bar" in name_lower and "kbar" not in name_lower):
-                return values / 10000, "P(GPa)"
-            
-            # Pressure in kbar: P[kbar] or variants containing kbar
-            if "p[kbar]" in name_lower or "kbar" in name_lower:
-                return values / 10, "P(GPa)"
-            
-            # No conversion needed
-            return values, name
+        # Apply conversions using the class method
+        self.x, self.labels[0] = self._convert_coordinate(self.x, xname)
+        self.y, self.labels[1] = self._convert_coordinate(self.y, yname)
 
-        # Apply conversions
-        self.x, self.labels[0] = convert_coordinate(self.x, xname)
-        self.y, self.labels[1] = convert_coordinate(self.y, yname)
-
-        self._log_print("The coordinate variables are:  " + str(self.labels))
+        self._log_print(f"The coordinate variables are: {self.labels}")
         self._log_print(f"The {self.labels[0]} range is: {self.x.min():.4g} to {self.x.max():.4g}")
         self._log_print(f"The {self.labels[1]} range is: {self.y.min():.4g} to {self.y.max():.4g}")
 
@@ -366,12 +417,12 @@ class QualityFactorAnalysis:
         self.phase_name = phase_name_ordered
         self.color_scheme = ''.join([str(i) for i in arrays[5] if str(i) != 'nan'])
         
-        self._log_print("The input variables are: " + str(self.apfu_name))
-        self._log_print("The input compositions are: " + str(self.apfu_obs))
-        self._log_print("The input uncertainties are: " + str(self.obs_err))
-        self._log_print("The selected analysis type is: " + self.analysis_type)
-        self._log_print("The phase names are: " + str(self.phase_name))
-        self._log_print("The color scheme is: " + self.color_scheme)
+        self._log_print(f"The input variables are: {self.apfu_name}")
+        self._log_print(f"The input compositions are: {self.apfu_obs}")
+        self._log_print(f"The input uncertainties are: {self.obs_err}")
+        self._log_print(f"The selected analysis type is: {self.analysis_type}")
+        self._log_print(f"The phase names are: {self.phase_name}")
+        self._log_print(f"The color scheme is: {self.color_scheme}")
         
         if len(self.obs_err) == 0:
             self.obs_err = self.calc_obs_err(self.apfu_obs)
@@ -415,16 +466,9 @@ class QualityFactorAnalysis:
             except KeyError:
                 continue
             
-            # Apply unit conversions
-            if self.labels[0] == "T(°C)" and self.coords_x == "T(K)":
-                x_val -= 273
-            elif self.labels[0] == "P(GPa)" and self.coords_x == "P(bar)":
-                x_val /= 10000
-
-            if self.labels[1] == "P(GPa)" and self.coords_y == "P(bar)":
-                y_val /= 10000
-            elif self.labels[1] == "T(°C)" and self.coords_y == "T(K)":
-                y_val -= 273
+            # Apply unit conversions using helper method
+            x_val = self._convert_coordinate_scalar(x_val, self.coords_x)
+            y_val = self._convert_coordinate_scalar(y_val, self.coords_y)
 
             # Use already processed phases from block
             phases = block.get("phases", [])
@@ -535,22 +579,35 @@ class QualityFactorAnalysis:
     # ====================
     
     def calc_obs_err(self, apfu_obs):
-        """Calculate observation errors based on analysis type."""
+        """
+        Calculate observation errors based on analysis type.
+        
+        Uses empirical power-law relationships determined for different analytical techniques:
+        - EDS: calc_err = 0.0703 * apfu^0.3574
+        - WDS map: calc_err = 0.0434 * apfu^0.3451
+        - WDS spot: calc_err = 0.023 * apfu^0.2772
+        
+        Args:
+            apfu_obs: Observed APFU values
+            
+        Returns:
+            Calculated uncertainties clipped to technique-specific limits
+        """
         if self.analysis_type == 'EDS':
-            calc_err = 0.0703 * (apfu_obs**0.3574)
-            min_err, max_err = 0.01, 0.1
+            calc_err = self.EDS_COEFF * (apfu_obs**self.EDS_EXPONENT)
+            min_err, max_err = self.EDS_MIN_ERR, self.EDS_MAX_ERR
         elif self.analysis_type == 'WDS map':
-            calc_err = 0.0434 * (apfu_obs**0.3451)
-            min_err, max_err = 0.005, 0.05
+            calc_err = self.WDS_MAP_COEFF * (apfu_obs**self.WDS_MAP_EXPONENT)
+            min_err, max_err = self.WDS_MAP_MIN_ERR, self.WDS_MAP_MAX_ERR
         elif self.analysis_type == 'WDS spot':
-            calc_err = 0.023 * (apfu_obs**0.2772)
-            min_err, max_err = 0.005, 0.05
+            calc_err = self.WDS_SPOT_COEFF * (apfu_obs**self.WDS_SPOT_EXPONENT)
+            min_err, max_err = self.WDS_SPOT_MIN_ERR, self.WDS_SPOT_MAX_ERR
         else:
             self._log_print('Please enter a valid analysis type (EDS, WDS map, WDS spot)')
             sys.exit()
         
         calc_err = np.clip(calc_err, min_err, max_err)
-        self._log_print('The calculated uncertainties are:  ' + str(calc_err))
+        self._log_print(f'The calculated uncertainties are: {calc_err}')
         return calc_err
 
     # ================================
@@ -558,119 +615,177 @@ class QualityFactorAnalysis:
     # ================================
     
     def Q_elem(self, apfu_obs, model, obs_err):
-        """Calculate quality factor for each element."""
-        factor_min = 1
-        factor_max = 6
-        obs_err = np.where(obs_err < 0.01, 0.01, obs_err)
+        """
+        Calculate quality factor for each element.
+        
+        Quantifies the agreement between observed and modeled element compositions.
+        """
+        obs_err = np.where(obs_err < self.MIN_ERROR_THRESHOLD, self.MIN_ERROR_THRESHOLD, obs_err)
         diff = np.abs(apfu_obs - model)
-        num = np.clip(diff - obs_err / factor_min, 0, factor_max * obs_err)
-        Qcmp_elem = 100 * np.abs(1 - num / (factor_max * obs_err))**(model + 1)
+        num = np.clip(diff - obs_err / self.MIN_COEFF_ERR, 0, self.MAX_COEFF_ERR * obs_err)
+        Qcmp_elem = 100 * np.abs(1 - num / (self.MAX_COEFF_ERR * obs_err))**(model + 1)
         return Qcmp_elem
     
     def Q_phase(self, apfu_obs, model, obs_err):
-        """Calculate quality factor for each phase."""
-        factor_min = 1
-        factor_max = 6
-        obs_err = np.where(obs_err < 0.01, 0.01, obs_err)
+        """
+        Calculate quality factor for each phase.
+        
+        Averages element quality factors to obtain phase-level quality assessment.
+        """
+        obs_err = np.where(obs_err < self.MIN_ERROR_THRESHOLD, self.MIN_ERROR_THRESHOLD, obs_err)
         diff = np.abs(apfu_obs - model)
-        num = np.clip(diff - obs_err / factor_min, 0, factor_max * obs_err)
-        Qcmp_elem = np.abs(1 - num / (factor_max * obs_err))**(model + 1)
-        Qcmp_phase = np.sum(Qcmp_elem) / np.size(Qcmp_elem) * 100
+        num = np.clip(diff - obs_err / self.MIN_COEFF_ERR, 0, self.MAX_COEFF_ERR * obs_err)
+        Qcmp_elem = np.abs(1 - num / (self.MAX_COEFF_ERR * obs_err))**(model + 1)
+        Qcmp_phase = np.sum(Qcmp_elem) / len(Qcmp_elem) * 100
         return Qcmp_phase
     
-    def chi2(self, apfu_obs, model, obs_err):
-        """Calculate chi-squared statistics."""
+    def chi2(self, apfu_obs, model, obs_err) -> float:
+        """
+        Calculate chi-squared statistics.
+        
+        Args:
+            apfu_obs: Observed APFU values
+            model: Modeled values
+            obs_err: Observation uncertainties
+            
+        Returns:
+            χ² statistic
+        """
         return np.sum((apfu_obs - model)**2 / obs_err**2)
     
-    def red_chi2(self, apfu_obs, model, obs_err, f):
-        """Calculate reduced chi-squared statistics."""
+    def red_chi2(self, apfu_obs, model, obs_err, f) -> float:
+        """
+        Calculate reduced chi-squared statistics.
+        
+        Args:
+            apfu_obs: Observed APFU values
+            model: Modeled values
+            obs_err: Observation uncertainties
+            f: Number of degrees of freedom
+            
+        Returns:
+            Reduced χ² statistic
+        """
         return self.chi2(apfu_obs, model, obs_err) / (f - 1)
     
-    def norm_weight(self, weight):
-        """Normalize the weight array."""
+    def norm_weight(self, weight: np.ndarray) -> np.ndarray:
+        """
+        Normalize weight array to sum to 1.
+        
+        Args:
+            weight: Weight array
+            
+        Returns:
+            Normalized weights
+        """
         weight_norm = weight / np.sum(weight)
         return weight_norm
     
-    def Q_tot(self, Qcmp_tot, weight_norm):
-        """Calculate total quality factor."""
+    def Q_tot(self, Qcmp_tot, weight_norm) -> float:
+        """
+        Calculate total quality factor from weighted phase contributions.
+        
+        Args:
+            Qcmp_tot: Quality factor values for all phases
+            weight_norm: Normalized weights for each phase
+            
+        Returns:
+            Weighted total quality factor
+        """
         return np.sum(Qcmp_tot * weight_norm)
 
     # =====================
     # Plotting methods
     # =====================
     
+    def _plot_contour_map(self, data_2d: np.ndarray, title: str, label_log_scale: bool = False, 
+                         clim_max: float = 100):
+        """
+        Helper method to plot a contour map with common formatting.
+        
+        Handles imshow, colorbar, contour, and clabel operations.
+        
+        Args:
+            data_2d: 2D data array
+            title: Plot title
+            label_log_scale: Whether to use logarithmic scale
+            clim_max: Maximum value for color limit
+        """
+        plt.imshow(data_2d, cmap=self.color_scheme, aspect='auto', origin='lower', 
+                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)],
+                  norm=colors.LogNorm() if label_log_scale else None)
+        plt.colorbar()
+        plt.title(title)
+        plt.xlabel(self.labels[0])
+        plt.ylabel(self.labels[1])
+        
+        if not label_log_scale:
+            plt.clim(0, clim_max)
+        
+        # Calculate contour levels
+        min_val = np.nanmin(data_2d)
+        max_val = np.nanmax(data_2d)
+        
+        # Only plot contours if min and max are different
+        if min_val != max_val:
+            step = (max_val - min_val) / 10
+            
+            # Determine appropriate contour levels
+            if label_log_scale:
+                if min_val <= 1:
+                    levels = np.arange(1, max_val, step)
+                else:
+                    levels = np.arange(np.round(min_val, decimals=1)+0.1, max_val, step)
+            else:
+                levels = np.arange(0, clim_max + 10, 10)
+            
+            contoured = plt.contour(data_2d, levels=levels, colors="white", 
+                                  linewidths=0.5, origin="lower", 
+                                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)],
+                                  norm=colors.LogNorm() if label_log_scale else None)
+            plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f' if not label_log_scale else '%1.1f')
+        
+        return min_val, max_val
+    
     def plot_elem(self, Qcmp, i):
         """Plot quality factor for each element."""
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(Qcmp_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.colorbar()
-        plt.title('Quality factor for ' + self.apfu_name[i])
-        plt.xlabel(self.labels[0])
-        plt.ylabel(self.labels[1])
-        plt.clim(0, 100)
-        
-        self._log_print('The maximum value of the quality factor for ' + self.apfu_name[i] + ' is: ' + str(np.nanmax(Qcmp_2D)))
-        
-        contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 100, 10), colors="white", 
-                              linewidths=0.5, origin="lower", 
-                              extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
+        max_val = self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.apfu_name[i]}', 
+                                         label_log_scale=False, clim_max=100)
+        self._log_print(f'The maximum value of the quality factor for {self.apfu_name[i]} is: {np.nanmax(Qcmp_2D)}')
         
         output_path = os.path.join(self.output_dir)
         os.makedirs(output_path, exist_ok=True)
-        plt.savefig(os.path.join(output_path, "Qcmp_" + self.apfu_name[i] + '.pdf'), format='pdf')
+        plt.savefig(os.path.join(output_path, f"Qcmp_{self.apfu_name[i]}.pdf"), format='pdf')
         plt.show()
         plt.close()
     
     def plot_phase(self, Qcmp, i):
         """Plot quality factor for each phase."""
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(Qcmp_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.colorbar()
-        plt.title('Quality factor for ' + self.phase_name[i-1])
-        plt.xlabel(self.labels[0])
-        plt.ylabel(self.labels[1])
-        plt.clim(0, 100)
-        
-        self._log_print('The maximum value of the quality factor for ' + self.phase_name[i-1] + ' is: ' + str(np.nanmax(Qcmp_2D)))
-        
-        contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 100, 10), colors="white", 
-                              linewidths=0.5, origin="lower", 
-                              extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
+        max_val = self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.phase_name[i-1]}', 
+                                         label_log_scale=False, clim_max=100)
+        self._log_print(f'The maximum value of the quality factor for {self.phase_name[i-1]} is: {np.nanmax(Qcmp_2D)}')
         
         if np.nanmax(Qcmp_2D) < 100:
             n_p = np.count_nonzero(self.y == self.y[0])
             max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
             max_Qcmp_y = self.y[max_Qcmp[0]*n_p]
             max_Qcmp_x = self.x[max_Qcmp[1]]
-            self._log_print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum Qcmp of ' + self.phase_name[i-1] + ' is: ' + str(max_Qcmp_x) + ' , ' + str(max_Qcmp_y))
+            self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Qcmp of {self.phase_name[i-1]} is: {max_Qcmp_x} , {max_Qcmp_y}')
         
         output_path = os.path.join(self.output_dir)
         os.makedirs(output_path, exist_ok=True)
-        plt.savefig(os.path.join(output_path, "Qcmp_" + self.phase_name[i-1] + '.pdf'), format='pdf')
+        plt.savefig(os.path.join(output_path, f"Qcmp_{self.phase_name[i-1]}.pdf"), format='pdf')
         plt.show()
         plt.close()
     
     def plot_tot(self, Qcmp, title):
         """Plot total quality factor."""
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(Qcmp_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.colorbar()
-        plt.title(title + ' Q*cmp')
-        plt.xlabel(self.labels[0])
-        plt.ylabel(self.labels[1])
-        plt.clim(0, 100)
+        max_val = self._plot_contour_map(Qcmp_2D, f'{title} Q*cmp', label_log_scale=False, clim_max=100)
         
-        self._log_print('The maximum value of the Q*cmp is: ' + str(np.nanmax(Qcmp_2D)))
-        
-        contoured = plt.contour(Qcmp_2D, levels=np.arange(0, 110, 10), colors="white", 
-                              linewidths=0.5, origin="lower", 
-                              extent=[min(self.x), max(self.x), min(self.y), max(self.y)])
-        plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.0f')
+        self._log_print(f'The maximum value of the Q*cmp is: {np.nanmax(Qcmp_2D)}')
         
         max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
         n_p = np.count_nonzero(self.y == self.y[0])
@@ -679,11 +794,11 @@ class QualityFactorAnalysis:
         max_Qcmp_x = np.mean(max_Qcmp_x)
         max_Qcmp_y = np.mean(max_Qcmp_y)
         
-        self._log_print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the maximum Q*cmp is: ' + str(max_Qcmp_x) + ' , ' + str(max_Qcmp_y))
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Q*cmp is: {max_Qcmp_x} , {max_Qcmp_y}')
         
         plt.plot(max_Qcmp_x, max_Qcmp_y, "ro", markersize=2)
         os.makedirs(self.output_dir, exist_ok=True)
-        plt.savefig(os.path.join(self.output_dir, title + "_Qcmp_tot.pdf"), format='pdf')
+        plt.savefig(os.path.join(self.output_dir, f"{title}_Qcmp_tot.pdf"), format='pdf')
         plt.show()
         plt.close()
     
@@ -692,111 +807,40 @@ class QualityFactorAnalysis:
         redchi2_2D = np.reshape(redchi2, (len(np.unique(self.y)), len(np.unique(self.x))))
         
         if f > 2:
-            self._log_print("The number of elements in " + self.phase_name[i-1] + " is: " + str(f))
-            plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                      norm=colors.LogNorm())
-            plt.colorbar()
-            plt.title('Reduced χ2 ' + self.phase_name[i-1])
-            plt.xlabel(self.labels[0])
-            plt.ylabel(self.labels[1])
-            
-            min_redchi2 = np.nanmin(redchi2_2D)
-            max_redchi2 = np.nanmax(redchi2_2D)
-            step = (max_redchi2 - min_redchi2) / 10
-            
-            self._log_print('The minimum reduced χ2 value for ' + self.phase_name[i-1] + ' is: ' + str(min_redchi2))
-            
-            if min_redchi2 <= 1:
-                contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), 
-                                      colors="white", linewidths=0.5, origin="lower", 
-                                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                      norm=colors.LogNorm())
-            else:
-                contoured = plt.contour(redchi2_2D, 
-                                      levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), 
-                                      colors="white", linewidths=0.5, origin="lower", 
-                                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                      norm=colors.LogNorm())
-            plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-            
+            self._log_print(f"The number of elements in {self.phase_name[i-1]} is: {f}")
+            min_val, max_val = self._plot_contour_map(redchi2_2D, f'Reduced χ2 {self.phase_name[i-1]}', 
+                                                      label_log_scale=True, clim_max=None)
+            self._log_print(f'The minimum reduced χ2 value for {self.phase_name[i-1]} is: {min_val}')
             os.makedirs(self.output_dir, exist_ok=True)
-            plt.savefig(os.path.join(self.output_dir, "redχ2_" + self.phase_name[i-1] + '.pdf'), format='pdf')
+            plt.savefig(os.path.join(self.output_dir, f"redχ2_{self.phase_name[i-1]}.pdf"), format='pdf')
             plt.show()
             plt.close()
         else:
-            self._log_print("The number of elements in " + self.phase_name[i-1] + " is: " + str(f))
-            plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                      norm=colors.LogNorm())
-            plt.colorbar()
-            plt.title('χ2 ' + self.phase_name[i-1])
-            plt.xlabel(self.labels[0])
-            plt.ylabel(self.labels[1])
-            
-            min_redchi2 = np.nanmin(redchi2_2D)
-            max_redchi2 = np.nanmax(redchi2_2D)
-            step = (max_redchi2 - min_redchi2) / 10
-            
-            self._log_print('The minimum χ2 value for ' + self.phase_name[i-1] + ' is: ' + str(min_redchi2))
-            
-            if min_redchi2 <= 1 and min_redchi2 != max_redchi2:
-                contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), 
-                                      colors="white", linewidths=0.5, origin="lower", 
-                                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                      norm=colors.LogNorm())
-                plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-            elif min_redchi2 > 1 and min_redchi2 != max_redchi2:
-                contoured = plt.contour(redchi2_2D, 
-                                      levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), 
-                                      colors="white", linewidths=0.5, origin="lower", 
-                                      extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                      norm=colors.LogNorm())
-                plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-            
+            self._log_print(f"The number of elements in {self.phase_name[i-1]} is: {f}")
+            min_val, max_val = self._plot_contour_map(redchi2_2D, f'χ2 {self.phase_name[i-1]}', 
+                                                      label_log_scale=True, clim_max=None)
+            self._log_print(f'The minimum χ2 value for {self.phase_name[i-1]} is: {min_val}')
             os.makedirs(self.output_dir, exist_ok=True)
-            plt.savefig(os.path.join(self.output_dir, "χ2_" + self.phase_name[i-1] + '.pdf'), format='pdf')
+            plt.savefig(os.path.join(self.output_dir, f"χ2_{self.phase_name[i-1]}.pdf"), format='pdf')
             plt.show()
             plt.close()
         
-        return min_redchi2
+        return min_val
     
     def plot_redchi2_tot(self, redchi2):
         """Plot total reduced chi-squared."""
         redchi2_2D = np.reshape(redchi2, (len(np.unique(self.y)), len(np.unique(self.x))))
-        plt.imshow(redchi2_2D, cmap=self.color_scheme, aspect='auto', origin='lower', 
-                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                  norm=colors.LogNorm())
-        plt.colorbar()
-        plt.title('Total reduced χ2')
-        plt.xlabel(self.labels[0])
-        plt.ylabel(self.labels[1])
+        min_redchi2, max_redchi2 = self._plot_contour_map(redchi2_2D, 'Total reduced χ2', 
+                                                          label_log_scale=True, clim_max=None)
         
-        min_redchi2 = np.nanmin(redchi2_2D)
-        max_redchi2 = np.nanmax(redchi2_2D)
-        step = (max_redchi2 - min_redchi2) / 10
-        
-        if min_redchi2 <= 1:
-            contoured = plt.contour(redchi2_2D, levels=np.arange(1, max_redchi2, step), 
-                                  colors="white", linewidths=0.5, origin="lower", 
-                                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                  norm=colors.LogNorm())
-        else:
-            contoured = plt.contour(redchi2_2D, 
-                                  levels=np.arange(np.round(min_redchi2, decimals=1)+0.1, max_redchi2, step), 
-                                  colors="white", linewidths=0.5, origin="lower", 
-                                  extent=[min(self.x), max(self.x), min(self.y), max(self.y)], 
-                                  norm=colors.LogNorm())
-        plt.clabel(contoured, inline=True, fontsize=10, fmt='%1.1f')
-        
-        self._log_print('The minimum value of the total reduced χ2 is: ' + str(min_redchi2))
+        self._log_print(f'The minimum value of the total reduced χ2 is: {min_redchi2}')
         
         n_p = np.count_nonzero(self.y == self.y[0])
         min_redchi2_pos = np.where(redchi2_2D == np.nanmin(redchi2_2D))
         min_redchi2_y = self.y[min_redchi2_pos[0]*n_p]
         min_redchi2_x = self.x[min_redchi2_pos[1]]
         
-        self._log_print('The ' + self.labels[0] + ' and ' + self.labels[1] + ' position of the minimum total reduced χ2 is: ' + str(min_redchi2_x) + ' , ' + str(min_redchi2_y))
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the minimum total reduced χ2 is: {min_redchi2_x} , {min_redchi2_y}')
         
         os.makedirs(self.output_dir, exist_ok=True)
         plt.savefig(os.path.join(self.output_dir, "redχ2_tot.pdf"), format='pdf')
@@ -904,7 +948,7 @@ class QualityFactorAnalysis:
         max_Qcmp = np.where(Qcmp_allphases == np.nanmax(Qcmp_allphases))
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
         
-        self._log_print("The reduced χ2 values for the phases at the maximum Q*cmp is: " + str(Qcmpmax_redchi2_value))
+        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp is: {Qcmpmax_redchi2_value}")
         
         self.plot_tot(Qcmp_allphases, "Unweighted")
     
@@ -913,10 +957,10 @@ class QualityFactorAnalysis:
         self.min_redchi2[self.min_redchi2 < 1] = 1
         weight = 1 / self.min_redchi2
         
-        self._log_print('The weight is:  ' + str(weight))
+        self._log_print(f'The weight is: {weight}')
         
         weight_norm = self.norm_weight(weight)
-        self._log_print('The normalized weight fraction is:  ' + str(weight_norm))
+        self._log_print(f'The normalized weight fraction is: {weight_norm}')
         
         Qcmp_allphases_weight = np.empty(len(Qcmp_phase_tot))
         for i in range(len(Qcmp_phase_tot)):
@@ -925,7 +969,7 @@ class QualityFactorAnalysis:
         max_Qcmp = np.where(Qcmp_allphases_weight == np.nanmax(Qcmp_allphases_weight))
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
         
-        self._log_print("The reduced χ2 values for the phases at the maximum Q*cmp are: " + str(Qcmpmax_redchi2_value))
+        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp are: {Qcmpmax_redchi2_value}")
         
         self.plot_tot(Qcmp_allphases_weight, "Weighted")
         return Qcmp_allphases_weight

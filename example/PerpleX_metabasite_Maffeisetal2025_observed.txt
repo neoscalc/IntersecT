@@ -13,6 +13,5 @@ Grt_Mg	Grt_Ca	Grt_Fe	Grt_Mn	Omp_Al	Omp_Na	Omp_Ca	Omp_Mg	Omp_Fe	Gln_Na	Gln_Mg	Gln
 -
 EDS
 
-
 Colour scheme:
 viridis

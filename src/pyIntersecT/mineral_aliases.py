@@ -75,7 +75,7 @@ class MineralAliases:
 
         if system == "magemin":
             table = self.magemin
-        elif system == "perplex" or system == "perple_x" or system == "perplex":
+        elif system == "perplex" or system == "perple_x":
             table = self.perplex
         else:
             raise ValueError(f"Unknown system: {system!r}")
@@ -273,7 +273,7 @@ def _discriminate_cpx(cpx_group):
     
     Classifies clinopyroxenes based on the standard nomenclature following
     Morimoto et al. (1988) pyroxene classification scheme. Recognizes six
-    endmember types plus omphacite as an intermediate composition:
+    endmember types plus omphacite as an intermediate composition and a generic Cpx category for compositions that do not fit well:
     
     - Jd (jadeite): Na-Al pyroxene, very high jadeite component (>0.8), very low Ca (<0.15)
     - Omp (omphacite): Intermediate Di-Jd solid solution, significant jadeite component (>0.25)
