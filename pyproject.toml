@@ -17,7 +17,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "pandas",
-    "pytk",
+    "ipyfilechooser",
 ]
 
 [project.urls]

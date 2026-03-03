@@ -2,13 +2,21 @@ from pathlib import Path
 import os
 import sys
 import logging
-from tkinter import filedialog
 from typing import Sequence, Optional
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+
+try:
+    from ipyfilechooser import FileChooser
+    from IPython.display import display
+    HAS_IPYFILECHOOSER = True
+except ImportError:
+    FileChooser = None
+    display = None
+    HAS_IPYFILECHOOSER = False
 
 from .parsers import parse_table, extract_element_info, normalize_element_name
 from .mineral_aliases import MineralAliases, discriminate_solvus
@@ -83,7 +91,8 @@ class QualityFactorAnalysis:
 
     def _setup_logging(self):
         if not self.output_dir:
-            return
+            self.output_dir = os.getcwd()
+            print(f"Warning: no output directory selected. Files will be saved in: {self.output_dir}")
         log_path = os.path.join(self.output_dir, "log_IntersecT.txt")
         logging.basicConfig(
             filename=log_path,
@@ -103,87 +112,119 @@ class QualityFactorAnalysis:
     # ================================
     
     def set_output_directory(self, path: Optional[str] = None):
-        """Prompt user to select an output directory."""
-        if path is None:
-            self._log_print("Please select an output directory.")
-            self.output_dir = filedialog.askdirectory()
-        else:
+        """Select an output directory via interactive widget or explicit path.
+
+        When called without arguments, displays an interactive directory chooser.
+        The directory is set automatically when the user confirms the selection.
+        When called with a path argument, sets the directory directly.
+        """
+        if path is not None:
             self.output_dir = str(Path(path).expanduser().resolve())
-        
-        self._log_print(f"The output directory is: {self.output_dir}")
-        self._setup_logging()
+            self._log_print(f"The output directory is: {self.output_dir}")
+            self._setup_logging()
+            return
 
-    def load_model_output(self, coord_columns: Optional[Sequence[str]] = None, 
-                         filename: Optional[str] = None):
-        """Load model output and apply phase name resolution with solvus discrimination."""
-        if filename is None:
-            self._log_print("Please select a csv/phm file from MAGEMin/Perple_X.")
-            filename = filedialog.askopenfilename()
-            if not filename:
+        if not HAS_IPYFILECHOOSER:
+            raise ImportError(
+                "ipyfilechooser is required for interactive directory selection. "
+                "Install it with: pip install ipyfilechooser"
+            )
+
+        fc = FileChooser(os.getcwd(), show_only_dirs=True)
+        fc.title = "Select output directory"
+
+        def _on_dir_selected(chooser):
+            if chooser.selected is None:
                 return
+            self.output_dir = str(Path(chooser.selected).resolve())
+            self._setup_logging()
+            self._log_print(f"The output directory is: {self.output_dir}")
 
-        self._log_print(f"The data file is: {filename}")
+        fc.register_callback(_on_dir_selected)
+        display(fc)
 
-        self.model_blocks = parse_table(filename, coord_columns=coord_columns)
+    def load_model_output(self, coord_columns: Optional[Sequence[str]] = None,
+                         filename: Optional[str] = None):
+        """Load model output and apply phase name resolution with solvus discrimination.
 
-        if self.model_blocks:
-            fc = list(self.model_blocks[0].get("coords", {}).keys())
-            self.coord_columns = fc if fc else (list(coord_columns) if coord_columns else None)
+        When called without arguments, displays an interactive file chooser.
+        The file is loaded automatically when the user confirms the selection.
+        When called with a filename argument, loads the file directly.
+        """
+        def _run(fname):
+            self._log_print(f"The data file is: {fname}")
+            self.model_blocks = parse_table(fname, coord_columns=coord_columns)
 
-            # Apply phase name resolution and solvus discrimination to all blocks
-            total_transformations = {}
+            if self.model_blocks:
+                fc = list(self.model_blocks[0].get("coords", {}).keys())
+                self.coord_columns = fc if fc else (list(coord_columns) if coord_columns else None)
 
-            for block in self.model_blocks:
-                system = block.get("system", "perplex")
-                phases = []
+                total_transformations = {}
 
-                for ph in block.get("phases", []):
-                    phc = ph.copy()
-                    original_phase_name = str(phc.get("phase", "")).strip()
+                for block in self.model_blocks:
+                    system = block.get("system", "perplex")
+                    phases = []
 
-                    try:
-                        resolved_name = self.aliases.resolve(original_phase_name, system)
-                        phc["phase"] = resolved_name
-                        phc["orig_phase"] = original_phase_name
-                    except KeyError:
-                        logging.warning(f"Phase '{original_phase_name}' not found in aliases for system '{system}'")
-                        phc["orig_phase"] = original_phase_name
+                    for ph in block.get("phases", []):
+                        phc = ph.copy()
+                        original_phase_name = str(phc.get("phase", "")).strip()
 
-                    phases.append(phc)
+                        if original_phase_name.lower() == "system":
+                            continue
+                        
+                        try:
+                            resolved_name = self.aliases.resolve(original_phase_name, system)
+                            phc["phase"] = resolved_name
+                            phc["orig_phase"] = original_phase_name
+                        except KeyError:
+                            logging.warning(f"Phase '{original_phase_name}' not found in aliases for system '{system}'")
+                            phc["orig_phase"] = original_phase_name
 
-                # Apply solvus discrimination and collect statistics
-                phases, block_transformations = discriminate_solvus(phases)
+                        phases.append(phc)
 
-                # Update block with processed phases
-                block["phases"] = phases
+                    phases, block_transformations = discriminate_solvus(phases)
+                    block["phases"] = phases
 
-                # Aggregate transformations
-                for key, count in block_transformations.items():
-                    total_transformations[key] = total_transformations.get(key, 0) + count
+                    for key, count in block_transformations.items():
+                        total_transformations[key] = total_transformations.get(key, 0) + count
 
-            # Log transformation statistics
-            self._log_print(f"\n{'-'*60}")
-            self._log_print("Phase discrimination summary:")
+                self._log_print(f"\n{'-'*60}")
+                self._log_print("Phase discrimination summary:")
 
-            # Group by parent phase and sort
-            parent_phases = {}
-            for (parent, assigned), count in total_transformations.items():
-                if parent not in parent_phases:
-                    parent_phases[parent] = []
-                parent_phases[parent].append((assigned, count))
+                parent_phases = {}
+                for (parent, assigned), count in total_transformations.items():
+                    if parent not in parent_phases:
+                        parent_phases[parent] = []
+                    parent_phases[parent].append((assigned, count))
 
-            for parent in sorted(parent_phases.keys()):
-                assignments = sorted(parent_phases[parent], key=lambda x: x[1], reverse=True)
-                total_count = sum(count for _, count in assignments)
+                for parent in sorted(parent_phases.keys()):
+                    assignments = sorted(parent_phases[parent], key=lambda x: x[1], reverse=True)
+                    total_count = sum(count for _, count in assignments)
 
-                for assigned, count in assignments:
-                    if parent == assigned:
-                        self._log_print(f"  {parent} → {assigned} : {count} (unchanged)")
-                    else:
-                        percentage = (count / total_count) * 100
-                        self._log_print(f"  {parent} → {assigned} : {count} ({percentage:.1f}%)")
+                    for assigned, count in assignments:
+                        if parent == assigned:
+                            self._log_print(f"  {parent} → {assigned} : {count} (unchanged)")
+                        else:
+                            percentage = (count / total_count) * 100
+                            self._log_print(f"  {parent} → {assigned} : {count} ({percentage:.1f}%)")
 
-            self._log_print(f"{'-'*60}\n")
+                self._log_print(f"{'-'*60}\n")
+
+        if filename is not None:
+            _run(filename)
+            return
+
+        if not HAS_IPYFILECHOOSER:
+            raise ImportError(
+                "ipyfilechooser is required for interactive file selection. "
+                "Install it with: pip install ipyfilechooser"
+            )
+
+        fc = FileChooser(os.getcwd())
+        fc.title = "Select MAGEMin/Perple_X output file"
+        fc.filter_pattern = ["*.phm", "*.csv", "*.txt"]
+        fc.register_callback(lambda chooser: _run(chooser.selected) if chooser.selected else None)
+        display(fc)
         
 
     def suggest_plot_coordinates(self):
@@ -380,52 +421,66 @@ class QualityFactorAnalysis:
         self._log_print(f"The {self.labels[1]} range is: {self.y.min():.4g} to {self.y.max():.4g}")
 
     def import_analytical_compo(self, filename: Optional[str] = None):
-        """Import composition data from a file."""
-        if filename is None:
-            self._log_print("Please select a text file containing measured compositions in apfu.")
-            filename = filedialog.askopenfilename()
-            if not filename:
-                return
-        
-        self._log_print("The composition file is:  " + filename)
-        
-        input_data = pd.read_csv(filename, sep='\t', header=None, comment='#')
-        arrays = input_data.values
-        
-        self.apfu_name = [str(i) for i in arrays[0] if str(i) != 'nan']
-        self.apfu_obs = np.array([float(i) for i in arrays[1] if str(i) != 'nan'])
-        
-        # Handle observation errors
-        obs_err_raw = np.array([float(i) if str(i) != '-' else '-' 
-                               for i in arrays[2] if str(i) != 'nan'])
-        
-        if np.all(obs_err_raw == '-'):
-            self.obs_err = np.array([])
-        else:
-            self.obs_err = np.where((obs_err_raw != '-') & (obs_err_raw.astype(float) < 0.01), 
-                                   0.01, obs_err_raw).astype(float)
-        
-        self.analysis_type = ''.join([str(i) for i in arrays[3] if str(i) != 'nan'])
-        
-        # Extract phase names from Phase_Element format and maintain order of first appearance
-        phase_name_ordered = []
-        for apfu_full_name in self.apfu_name:
-            if "_" in apfu_full_name:
-                phase = apfu_full_name.split("_", 1)[0]
-                if phase not in phase_name_ordered:
-                    phase_name_ordered.append(phase)
-        self.phase_name = phase_name_ordered
-        self.color_scheme = ''.join([str(i) for i in arrays[5] if str(i) != 'nan'])
-        
-        self._log_print(f"The input variables are: {self.apfu_name}")
-        self._log_print(f"The input compositions are: {self.apfu_obs}")
-        self._log_print(f"The input uncertainties are: {self.obs_err}")
-        self._log_print(f"The selected analysis type is: {self.analysis_type}")
-        self._log_print(f"The phase names are: {self.phase_name}")
-        self._log_print(f"The color scheme is: {self.color_scheme}")
-        
-        if len(self.obs_err) == 0:
-            self.obs_err = self.calc_obs_err(self.apfu_obs)
+        """Import composition data from a file.
+    
+        When called without arguments, displays an interactive file chooser.
+        The file is loaded automatically when the user confirms the selection.
+        When called with a filename argument, loads the file directly.
+        """
+        def _run(fname):
+            self._log_print("The composition file is:  " + fname)
+            
+            input_data = pd.read_csv(fname, sep='\t', header=None, comment='#')
+            arrays = input_data.values
+            
+            self.apfu_name = [str(i) for i in arrays[0] if str(i) != 'nan']
+            self.apfu_obs = np.array([float(i) for i in arrays[1] if str(i) != 'nan'])
+            
+            obs_err_raw = np.array([float(i) if str(i) != '-' else '-' 
+                                   for i in arrays[2] if str(i) != 'nan'])
+            
+            if np.all(obs_err_raw == '-'):
+                self.obs_err = np.array([])
+            else:
+                self.obs_err = np.where((obs_err_raw != '-') & (obs_err_raw.astype(float) < 0.01), 
+                                       0.01, obs_err_raw).astype(float)
+            
+            self.analysis_type = ''.join([str(i) for i in arrays[3] if str(i) != 'nan'])
+            
+            phase_name_ordered = []
+            for apfu_full_name in self.apfu_name:
+                if "_" in apfu_full_name:
+                    phase = apfu_full_name.split("_", 1)[0]
+                    if phase not in phase_name_ordered:
+                        phase_name_ordered.append(phase)
+            self.phase_name = phase_name_ordered
+            self.color_scheme = ''.join([str(i) for i in arrays[5] if str(i) != 'nan'])
+            
+            self._log_print(f"The input variables are: {self.apfu_name}")
+            self._log_print(f"The input compositions are: {self.apfu_obs}")
+            self._log_print(f"The input uncertainties are: {self.obs_err}")
+            self._log_print(f"The selected analysis type is: {self.analysis_type}")
+            self._log_print(f"The phase names are: {self.phase_name}")
+            self._log_print(f"The color scheme is: {self.color_scheme}")
+            
+            if len(self.obs_err) == 0:
+                self.obs_err = self.calc_obs_err(self.apfu_obs)
+    
+        if filename is not None:
+            _run(filename)
+            return
+    
+        if not HAS_IPYFILECHOOSER:
+            raise ImportError(
+                "ipyfilechooser is required for interactive file selection. "
+                "Install it with: pip install ipyfilechooser"
+            )
+    
+        fc = FileChooser(os.getcwd())
+        fc.title = "Select measured compositions file"
+        fc.filter_pattern = ["*.txt", "*.tsv"]
+        fc.register_callback(lambda chooser: _run(chooser.selected) if chooser.selected else None)
+        display(fc)
 
     # ======================
     # Build intersect table 

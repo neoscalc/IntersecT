@@ -31,9 +31,24 @@ IntersecT integrates thermodynamic model outputs with measured mineral compositi
 
 ## Installation
 
-IntersecT requires Python 3.9 or higher. Installation through pip handles all dependencies including numpy, pandas, and matplotlib.
+IntersecT requires Python 3.9 or higher. Before installing, ensure pip is up to date, as older versions may not correctly resolve the latest package release:
+```bash
+pip install --upgrade pip
+```
+
+Then install IntersecT:
 ```bash
 pip install pyIntersecT
+```
+
+If a previous version is already installed, upgrade explicitly to ensure the latest release is used:
+```bash
+pip install --upgrade pyIntersecT
+```
+
+If the correct version is not installed after upgrading (verify with `pip show pyIntersecT`), force reinstallation bypassing the local cache:
+```bash
+pip install --upgrade --no-cache-dir pyIntersecT
 ```
 
 For use with Jupyter notebooks, install JupyterLab or Jupyter Notebook:
