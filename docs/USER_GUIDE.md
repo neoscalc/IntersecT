@@ -86,18 +86,24 @@ from pyIntersecT import IntersecT
 InT = IntersecT.QualityFactorAnalysis.from_default_symbols()
 ```
 
-**2.** Specify an **output directory** using set_output_directory. This opens a directory selection dialog and creates a log file in the chosen location. All subsequent processing writes informational messages to both console and log file, providing a permanent record of coordinate ranges, compositional data, calculated uncertainties, quality factor maxima with locations, reduced χ² minima, weighting factors, and final best fit estimates.
+**2.** Specify an **output directory** using set_output_directory. This creates a log file in the chosen location. All subsequent processing writes informational messages to both console and log file, providing a permanent record of coordinate ranges, compositional data, calculated uncertainties, quality factor maxima with locations, reduced χ² minima, weighting factors, and final best fit estimates. When called without arguments, a graphical directory selection dialog opens via tkinter. On macOS systems where tkinter is not available (e.g. Python installed via Homebrew), the method falls back to a text prompt requesting manual path entry. The path can also be passed directly as an argument to bypass any dialog.
 
 ```python
-# Configure output directory
+# Configure output directory - opens graphical dialog
 InT.set_output_directory()
+
+# Alternative: pass path directly
+# InT.set_output_directory(path="/path/to/output/folder")
 ```
 
-**3.** Load the **thermodynamic model output** using load_model_output. The method automatically detects file format, parses coordinate and compositional data, and identifies available coordinate columns. This method resolves phase names from software-specific abbreviations to Warr nomenclature, applies solvus discrimination to distinguish individual phases within solid solution series. A summary of renaming will be displayed and saved in the log file. Review this summary to confirm that the discrimination worked as intended before proceeding with the quality factor calculations. Processing may take several seconds for large files containing thousands of calculation points and dozens of stable phases.
+**3.** Load the **thermodynamic model output** using load_model_output. The method automatically detects file format, parses coordinate and compositional data, and identifies available coordinate columns. This method resolves phase names from software-specific abbreviations to Warr nomenclature, applies solvus discrimination to distinguish individual phases within solid solution series. For MAGEMin output, phase separation is handled internally by the software and discrimination is not applied. A summary of renaming will be displayed and saved in the log file. Review this summary to confirm that the discrimination worked as intended before proceeding with the quality factor calculations. Processing may take several seconds for large files containing thousands of calculation points and dozens of stable phases. When called without arguments, a graphical file selection dialog opens. On systems where tkinter is not available, the method falls back to a text prompt. The file path can also be passed directly as an argument.
 
 ```python
-# Load thermodynamic model output
+# Load thermodynamic model output - opens graphical dialog
 InT.load_model_output()
+
+# Alternative: pass path directly
+# InT.load_model_output(filename="/path/to/model_output.phm")
 ```
 
 **4.** Obtain **coordinate suggestions** using suggest_plot_coordinates, which analyzes data structure to determine appropriate axis assignments. The method returns recommended names for horizontal and vertical axes based on which coordinates vary and their organizational patterns. For standard pressure-temperature diagrams, the return values will be temperature and pressure column names. For composition-variable diagrams, the return values will be composition and pressure or composition and temperature depending on calculation structure. Accept coordinate suggestions by passing them to set_plot_coordinates, or specify alternative coordinates if automatic detection yields unexpected results. This method extracts coordinate values from all calculation points, applies unit conversions to transform temperatures from K to °C and pressures from bar to GPa, and prints coordinate ranges to console and log file. Verify that reported ranges match expectations for the pressure-temperature-composition space covered by the calculation.
@@ -112,11 +118,14 @@ InT.set_plot_coordinates(x_coord, y_coord)
 # InT.set_plot_coordinates("X[0.0-1.0]", "P[kbar]")  # for X-P diagram
 ```
 
-**5.** Load **measured compositions** using import_analytical_compo. The method parses element identifiers, observed values, uncertainties, analytical technique, phase names, and colormap specification. If automatic uncertainty calculation was requested through dashes, the method computes uncertainties using the analytical technique specified and empirical relationships described in Nerone et al. (2025).
+**5.** Load **measured compositions** using import_analytical_compo. The method parses element identifiers, observed values, uncertainties, analytical technique, and colormap specification. If automatic uncertainty calculation was requested through the dash, the method computes uncertainties using the analytical technique specified and empirical relationships described in Nerone et al. (2025). When called without arguments, a graphical file selection dialog opens. On systems where tkinter is not available, the method falls back to a text prompt. The file path can also be passed directly as an argument.
 
 ```python
-# Load measured mineral compositions
+# Load measured mineral compositions - opens graphical dialog
 InT.import_analytical_compo()
+
+# Alternative: pass path directly
+# InT.import_analytical_compo(filename="/path/to/compositions.txt")
 ```
 
 **6.** Build the **integrated data table** using build_intersect_table. This method searches model output for phases matching the observed assemblage, and extracts element values from matching phases while recording NaN for elements in absent phases. The resulting data table contains one row per calculation point with coordinate columns followed by composition columns for all observed phase-element combinations.
@@ -133,7 +142,7 @@ InT.build_intersect_table()
 InT.Qcmp_elem()
 Qcmp_phase_tot = InT.Qcmp_phase()
 redchi2_phase = InT.redchi2_phase()
-redchi2_allphases = InT.redchi2_tot()
+InT.redchi2_tot()
 ```
 
 **8.** Generate **unweighted total quality factors** using Qcmp_tot, which combines phase-specific quality factors with equal weights for all phases. The method creates Unweighted_Qcmp_tot.pdf showing colored quality factor with contours and a red marker at maximum location. Reduced χ² values for all phases at this maximum location are printed to console and log file. Calculate **weighted total quality factors** using Qcmp_tot_weight, which combines phase-specific quality factors with weights inversely proportional to minimum reduced χ². This produces Weighted_Qcmp_tot.pdf marking the final best fit conditions estimate with a red symbol at maximum weighted quality factor location. The weights assigned to each phase and reduced χ² values at optimal location are printed to console and log file. Because several pixels may reach 100% in theoretical examples, the best fit is taken at the centre of mass of these pixels, though this is not common in natural rocks and should be considered carefully.
@@ -172,7 +181,7 @@ Spatial extent of high-quality factor regions indicates sensitivity of compositi
 
 ## Troubleshooting Common Issues
 
-Selection dialogs may appear below open windows. 
+Selection dialogs may appear below open windows on some systems. On macOS with Python installed via Homebrew, tkinter is not included by default and the graphical dialog will not open. The methods will automatically fall back to a text prompt for manual path entry. To restore graphical dialogs on Homebrew Python, run `brew install python-tk@3.13` in the terminal. On all other systems, including Windows and macOS with Python from python.org or Anaconda, tkinter is available and graphical dialogs open normally. As an alternative on any system, file paths and directory paths can be passed directly as arguments to avoid dialogs entirely.
 
 Parsing failures manifest as exceptions during load_model_output indicating expected columns were not found or coordinates could not be identified. Examine the file in a text editor to verify expected structure with properly labeled columns and consistent delimitation. For Perple_X files, ensure a header line containing "Name" and coordinate identifiers like "T(K)" or "P(bar)" precedes data rows. For MAGEMin files, verify the first line contains comma-separated column names.
 

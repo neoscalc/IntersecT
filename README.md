@@ -63,18 +63,41 @@ pip install notebook
 
 ## Quick Start
 
-Download the IntersecT Jupyter notebook from the repository and execute it in your Python environment. The notebook provides step-by-step guidance through the complete analysis workflow.
+Download `IntersecT.ipynb` from the repository and place it in your project folder, alongside your Perple_X or MAGEMin output files. Open a terminal in that folder and launch Jupyter:
+
+```bash
+# Windows: navigate to your project folder, then run
+jupyter-notebook.exe
+
+# macOS / Linux
+jupyter notebook
+```
+
+Or launch Jupyter Notebook or JupyterLab from that folder using your preferred method (terminal, Anaconda Navigator, or another interface).
+
+The three file selection methods (`set_output_directory`, `load_model_output`, `import_analytical_compo`) open a graphical dialog automatically where available. On macOS with Homebrew Python, where tkinter is not included by default, the methods fall back to a text prompt for manual path entry. On any system, paths can be passed directly as arguments to bypass dialogs entirely.
+
+To restore graphical dialogs on Homebrew Python, in the terminal, run:
+
+```bash
+brew install python-tk@3.13
+```
+
+Execute the code cells in sequence:
+
 ```python
 from pyIntersecT import IntersecT
 
 # Initialize analysis object
 InT = IntersecT.QualityFactorAnalysis.from_default_symbols()
 
-# Configure output directory
+# Configure output directory (graphical dialog, or pass path directly)
 InT.set_output_directory()
+# InT.set_output_directory(path="/path/to/output/folder")
 
-# Load thermodynamic model output
+# Load thermodynamic model output (graphical dialog, or pass path directly)
 InT.load_model_output()
+# InT.load_model_output(filename="/path/to/model_output.phm")
 
 # Auto-detect and configure coordinate system
 x_coord, y_coord = InT.suggest_plot_coordinates()
@@ -90,6 +113,7 @@ InT.build_intersect_table()
 InT.Qcmp_elem()
 Qcmp_phase_tot = InT.Qcmp_phase()
 redchi2_phase = InT.redchi2_phase()
+InT.redchi2_tot()
 
 # Generate final best fit estimates
 InT.Qcmp_tot(Qcmp_phase_tot, redchi2_phase)

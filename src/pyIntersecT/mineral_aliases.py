@@ -166,16 +166,26 @@ def _get_element_value(phase: dict, element: str) -> float:
     
     return 0.0
 
-def discriminate_solvus(phases):
+def discriminate_solvus(phases, system: str = "perplex"):
     """
     Group phases by parent phase name and apply endmember classification.
-    For phases with defined endmember compositions, apply compositional 
-    discrimination regardless of whether multiple phases exist.
+    For Perple_X output, applies compositional discrimination to identify
+    specific endmember compositions within solid solution series.
+    For MAGEMin output, solvus discrimination is skipped as MAGEMin already
+    handles phase separation internally.
     
     Returns:
         Tuple of (processed_phases, transformation_stats)
         where transformation_stats is dict: {(parent, assigned): count}
     """
+    if system.lower() == "magemin":
+        transformations = {}
+        for p in phases:
+            name = p.get("phase", "")
+            key = (name, name)
+            transformations[key] = transformations.get(key, 0) + 1
+        return phases, transformations
+
     grouped = {}
     for p in phases:
         name = p.get("phase", "")

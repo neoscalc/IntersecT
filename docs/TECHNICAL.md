@@ -54,13 +54,13 @@ The system translates software-specific abbreviations to standardized nomenclatu
 
 The MineralAliases class loads translation tables from a TOML configuration file containing mappings from software-specific abbreviations to Warr (2021) standard nomenclature. Separate tables exist for MAGEMin and Perple_X because these packages employ different abbreviation conventions. All mappings use normalized lowercase keys for case-insensitive matching to accommodate variations in capitalization across file formats and software versions.
 
-Resolution queries specify phase name and source system, allowing selection of the appropriate translation table. When a mapping exists, the resolver returns the Warr (2021) standard abbreviation. In strict mode, unmapped names raise exceptions to alert users that the configuration lacks entries for phases in their model output. In non-strict mode, unmapped names pass through unchanged with optional persistence for tracking.
+Resolution queries specify phase name and source system, allowing selection of the appropriate translation table. When a mapping exists, the resolver returns the Warr (2021) standard abbreviation. Unmapped phase names pass through unchanged and are reported in a warning listing all unresolved phases at the end of processing.
 
 Case-insensitive matching handles variations where different Perple_X versions may capitalize phase names as GARNET, Garnet, or garnet. Normalization to lowercase keys during table loading and query formulation ensures all variants map correctly to the Grt abbreviation.
 
 ### Endmember Discrimination Framework
 
-Phases sharing a parent name after initial resolution undergo compositional analysis for endmember assignment. The discrimination process applies to all phases with defined endmember compositions in the database, operating independently on each phase regardless of whether other phases with the same parent name exist at the calculation point. This approach enables consistent classification based on absolute compositional criteria rather than relative comparisons between coexisting phases.
+Phases sharing a parent name after initial resolution undergo compositional analysis for endmember assignment. Solvus discrimination applies exclusively to Perple_X output. MAGEMin separates phases internally during calculation, so phases from MAGEMin output pass through the discrimination step unchanged. The discrimination process applies to all phases with defined endmember compositions in the database.
 
 The endmember database defines stoichiometric ratios for reference compositions used in discrimination calculations. Each solid solution series contains a dictionary mapping endmember names to characteristic cation abundances. The definitions focus on major elements that distinguish compositional types while omitting minor components that would complicate calculations without improving discrimination. These compositions represent idealized endmember stoichiometries as they appear in thermodynamic databases rather than natural mineral compositions that typically show solid solution.
 
@@ -108,7 +108,7 @@ The QualityFactorAnalysis class integrates parsing, phase resolution, and discri
 
 The class maintains dual structures representing modern and legacy formats to enable incremental migration of calculation methods while preserving compatibility with original algorithms. The modern structure stores parsed blocks as a list of dictionaries with coordinate values, phase compositions, and system identifiers. The legacy structure flattens this into a pandas DataFrame matching original organization.
 
-Construction of the legacy structure occurs through build_intersect_table, which iterates through blocks extracting coordinates and compositions matching observed phase-element combinations. For each block, the method resolves phase names, applies solvus discrimination, searches for matching phases, and extracts element values, recording NaN for absent phases.
+Construction of the legacy structure occurs through build_intersect_table, which iterates through blocks extracting coordinates and compositions matching observed phase-element combinations. For each block, the method searches for matching phases, and extracts element values, recording NaN for absent phases.
 
 The DataFrame ensures coordinate columns appear first followed by composition columns in user-specified order. The labels array stores column names as a NumPy array for advanced indexing. The phase_id array assigns integer identifiers grouping columns by parent phase, enabling iteration over phases to compute phase-specific quality factors.
 

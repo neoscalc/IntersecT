@@ -9,15 +9,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
-try:
-    from ipyfilechooser import FileChooser
-    from IPython.display import display
-    HAS_IPYFILECHOOSER = True
-except ImportError:
-    FileChooser = None
-    display = None
-    HAS_IPYFILECHOOSER = False
-
 from .parsers import parse_table, extract_element_info, normalize_element_name
 from .mineral_aliases import MineralAliases, discriminate_solvus
 
@@ -66,23 +57,11 @@ class QualityFactorAnalysis:
         self.MAX_COEFF_ERR = 6
         self.MIN_ERROR_THRESHOLD = 0.01
         
-        # EDS analysis: calc_err = 0.0703 * apfu^0.3574
-        self.EDS_COEFF = 0.0703
-        self.EDS_EXPONENT = 0.3574
-        self.EDS_MIN_ERR = 0.01
-        self.EDS_MAX_ERR = 0.1
-        
-        # WDS map analysis: calc_err = 0.0434 * apfu^0.3451
-        self.WDS_MAP_COEFF = 0.0434
-        self.WDS_MAP_EXPONENT = 0.3451
-        self.WDS_MAP_MIN_ERR = 0.005
-        self.WDS_MAP_MAX_ERR = 0.05
-        
-        # WDS spot analysis: calc_err = 0.023 * apfu^0.2772
-        self.WDS_SPOT_COEFF = 0.023
-        self.WDS_SPOT_EXPONENT = 0.2772
-        self.WDS_SPOT_MIN_ERR = 0.005
-        self.WDS_SPOT_MAX_ERR = 0.05
+        self._analysis_params = {
+            'EDS':     (0.0703, 0.3574, 0.01, 0.1),
+            'WDS map': (0.0434, 0.3451, 0.005, 0.05),
+            'WDS spot':(0.023,  0.2772, 0.005, 0.05),
+        }
 
     @classmethod
     def from_default_symbols(cls):
@@ -107,41 +86,53 @@ class QualityFactorAnalysis:
         print(message)
         logging.info(message)
 
+    def _fmt(self, value):
+        """Format numeric values to at most 4 decimal places."""
+        if isinstance(value, float) or isinstance(value, np.floating):
+            formatted = f"{value:.4f}".rstrip('0')
+            if formatted.endswith('.'):
+                formatted += '0'
+            return formatted
+        if isinstance(value, np.ndarray):
+            def fmt_scalar(v):
+                s = f"{v:.4f}".rstrip('0')
+                return s + '0' if s.endswith('.') else s
+            return '[' + ', '.join(fmt_scalar(v) for v in value.flat) + ']'
+        return str(value)
+
     # ================================
     # I/O Methods
     # ================================
     
     def set_output_directory(self, path: Optional[str] = None):
-        """Select an output directory via interactive widget or explicit path.
+        """Set the output directory.
 
-        When called without arguments, displays an interactive directory chooser.
-        The directory is set automatically when the user confirms the selection.
-        When called with a path argument, sets the directory directly.
+        When called without arguments, attempts to open a graphical directory
+        selection dialog via tkinter. If tkinter is not available, prompts the
+        user to enter a path manually. When called with a path argument, sets
+        the directory directly without any dialog.
         """
-        if path is not None:
-            self.output_dir = str(Path(path).expanduser().resolve())
-            self._log_print(f"The output directory is: {self.output_dir}")
-            self._setup_logging()
-            return
-
-        if not HAS_IPYFILECHOOSER:
-            raise ImportError(
-                "ipyfilechooser is required for interactive directory selection. "
-                "Install it with: pip install ipyfilechooser"
-            )
-
-        fc = FileChooser(os.getcwd(), show_only_dirs=True)
-        fc.title = "Select output directory"
-
-        def _on_dir_selected(chooser):
-            if chooser.selected is None:
-                return
-            self.output_dir = str(Path(chooser.selected).resolve())
-            self._setup_logging()
-            self._log_print(f"The output directory is: {self.output_dir}")
-
-        fc.register_callback(_on_dir_selected)
-        display(fc)
+        if path is None:
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                path = filedialog.askdirectory(title="Select output directory")
+                root.destroy()
+                if not path:
+                    path = os.getcwd()
+                    print(f"No directory selected. Using current directory. Re-run this cell to change directory")
+            except Exception:
+                print("tkinter is not available on this system.")
+                print("On macOS with Homebrew Python, install it with: brew install python-tk@3.13")
+                path = input("Enter output directory path manually: ")
+                if not path.strip():
+                    path = os.getcwd()
+                    print(f"No directory entered. Using current directory: {path}")
+        self.output_dir = str(Path(path).expanduser().resolve())
+        self._log_print(f"The output directory is: {self.output_dir}")
+        self._setup_logging()
 
     def load_model_output(self, coord_columns: Optional[Sequence[str]] = None,
                          filename: Optional[str] = None):
@@ -155,77 +146,104 @@ class QualityFactorAnalysis:
             self._log_print(f"The data file is: {fname}")
             self.model_blocks = parse_table(fname, coord_columns=coord_columns)
 
-            if self.model_blocks:
-                fc = list(self.model_blocks[0].get("coords", {}).keys())
-                self.coord_columns = fc if fc else (list(coord_columns) if coord_columns else None)
+            if not self.model_blocks:
+                return
 
-                total_transformations = {}
+            fc = list(self.model_blocks[0].get("coords", {}).keys())
+            self.coord_columns = fc if fc else (list(coord_columns) if coord_columns else None)
 
+            total_transformations = {}
+            raw_lookup = {}
+            unresolved_phases = set()
+
+            for block in self.model_blocks:
+                system = block.get("system", "perplex")
+                phases = []
+
+                for ph in block.get("phases", []):
+                    original_phase_name = str(ph.get("phase", "")).strip()
+                    if original_phase_name.lower() == "system":
+                        continue
+                    
+                    phc = ph.copy()
+                    phc["raw_phase"] = original_phase_name
+                    phc["orig_phase"] = original_phase_name
+
+                    try:
+                        phc["phase"] = self.aliases.resolve(original_phase_name, system)
+                    except KeyError:
+                        unresolved_phases.add(original_phase_name)
+
+                    phases.append(phc)
+                    raw_lookup.setdefault(phc["phase"], original_phase_name)
+
+                phases, block_transformations = discriminate_solvus(phases, system=system)
+                block["phases"] = phases
+
+                for key, count in block_transformations.items():
+                    total_transformations[key] = total_transformations.get(key, 0) + count
+
+            self._log_print(f"\n{'-'*60}")
+            
+            if unresolved_phases:
+                logging.warning(
+                    f"The following phases were not found in the {system} aliases "
+                    f"dictionary and were kept as-is: {', '.join(sorted(unresolved_phases))}"
+                )
+
+            if system.lower() == "magemin":
+                self._log_print("Phase resolution summary (original → Warr 2021):")
+                seen = set()
                 for block in self.model_blocks:
-                    system = block.get("system", "perplex")
-                    phases = []
-
                     for ph in block.get("phases", []):
-                        phc = ph.copy()
-                        original_phase_name = str(phc.get("phase", "")).strip()
-
-                        if original_phase_name.lower() == "system":
-                            continue
-                        
-                        try:
-                            resolved_name = self.aliases.resolve(original_phase_name, system)
-                            phc["phase"] = resolved_name
-                            phc["orig_phase"] = original_phase_name
-                        except KeyError:
-                            logging.warning(f"Phase '{original_phase_name}' not found in aliases for system '{system}'")
-                            phc["orig_phase"] = original_phase_name
-
-                        phases.append(phc)
-
-                    phases, block_transformations = discriminate_solvus(phases)
-                    block["phases"] = phases
-
-                    for key, count in block_transformations.items():
-                        total_transformations[key] = total_transformations.get(key, 0) + count
-
-                self._log_print(f"\n{'-'*60}")
-                self._log_print("Phase discrimination summary:")
+                        raw = ph.get("raw_phase", ph.get("phase", ""))
+                        final = ph.get("phase", "")
+                        if (raw, final) not in seen:
+                            self._log_print(f"  {raw} → {final}")
+                            seen.add((raw, final))
+            else:
+                self._log_print("Phase resolution and discrimination summary (original → Warr 2021 → endmember):")
 
                 parent_phases = {}
                 for (parent, assigned), count in total_transformations.items():
-                    if parent not in parent_phases:
-                        parent_phases[parent] = []
-                    parent_phases[parent].append((assigned, count))
+                    parent_phases.setdefault(parent, []).append((assigned, count))
 
                 for parent in sorted(parent_phases.keys()):
+                    raw = raw_lookup.get(parent, parent)
                     assignments = sorted(parent_phases[parent], key=lambda x: x[1], reverse=True)
                     total_count = sum(count for _, count in assignments)
 
                     for assigned, count in assignments:
                         if parent == assigned:
-                            self._log_print(f"  {parent} → {assigned} : {count} (unchanged)")
+                            self._log_print(f"  {raw} → {parent} → {assigned} : {count}")
                         else:
                             percentage = (count / total_count) * 100
-                            self._log_print(f"  {parent} → {assigned} : {count} ({percentage:.1f}%)")
+                            self._log_print(f"  {raw} → {parent} → {assigned} : {count} ({percentage:.1f}%)")
 
-                self._log_print(f"{'-'*60}\n")
+            self._log_print(f"{'-'*60}\n")
 
-        if filename is not None:
-            _run(filename)
-            return
-
-        if not HAS_IPYFILECHOOSER:
-            raise ImportError(
-                "ipyfilechooser is required for interactive file selection. "
-                "Install it with: pip install ipyfilechooser"
-            )
-
-        fc = FileChooser(os.getcwd())
-        fc.title = "Select MAGEMin/Perple_X output file"
-        fc.filter_pattern = ["*.phm", "*.csv", "*.txt"]
-        fc.register_callback(lambda chooser: _run(chooser.selected) if chooser.selected else None)
-        display(fc)
-        
+        if filename is None:
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                filename = filedialog.askopenfilename(
+                    title="Select MAGEMin/Perple_X output file",
+                    filetypes=[("Model output files", "*.phm *.csv *.txt"), ("All files", "*.*")]
+                )
+                root.destroy()
+                if not filename:
+                    print("No file selected. Please re-run this cell and select a file, or pass the path directly: InT.load_model_output(filename=path)")
+                    return
+            except Exception:
+                print("tkinter is not available on this system.")
+                print("On macOS with Homebrew Python, install it with: brew install python-tk@3.13")
+                filename = input("Enter path to MAGEMin/Perple_X output file manually: ")
+                if not filename.strip():
+                    print("No file entered. Please re-run this cell.")
+                    return
+        _run(filename)
 
     def suggest_plot_coordinates(self):
         """Auto-suggest two coordinates for plotting."""
@@ -417,8 +435,8 @@ class QualityFactorAnalysis:
         self.y, self.labels[1] = self._convert_coordinate(self.y, yname)
 
         self._log_print(f"The coordinate variables are: {self.labels}")
-        self._log_print(f"The {self.labels[0]} range is: {self.x.min():.4g} to {self.x.max():.4g}")
-        self._log_print(f"The {self.labels[1]} range is: {self.y.min():.4g} to {self.y.max():.4g}")
+        self._log_print(f"The {self.labels[0]} range is: {self._fmt(self.x.min())} to {self._fmt(self.x.max())}")
+        self._log_print(f"The {self.labels[1]} range is: {self._fmt(self.y.min())} to {self._fmt(self.y.max())}")
 
     def import_analytical_compo(self, filename: Optional[str] = None):
         """Import composition data from a file.
@@ -466,21 +484,28 @@ class QualityFactorAnalysis:
             if len(self.obs_err) == 0:
                 self.obs_err = self.calc_obs_err(self.apfu_obs)
     
-        if filename is not None:
-            _run(filename)
-            return
-    
-        if not HAS_IPYFILECHOOSER:
-            raise ImportError(
-                "ipyfilechooser is required for interactive file selection. "
-                "Install it with: pip install ipyfilechooser"
-            )
-    
-        fc = FileChooser(os.getcwd())
-        fc.title = "Select measured compositions file"
-        fc.filter_pattern = ["*.txt", "*.tsv"]
-        fc.register_callback(lambda chooser: _run(chooser.selected) if chooser.selected else None)
-        display(fc)
+        if filename is None:
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                filename = filedialog.askopenfilename(
+                    title="Select measured compositions file",
+                    filetypes=[("Text files", "*.txt *.tsv"), ("All files", "*.*")]
+                )
+                root.destroy()
+                if not filename:
+                    print("No file selected. Please re-run this cell and select a file, or pass the path directly: InT.import_analytical_compo(filename=path)")
+                    return
+            except Exception:
+                print("tkinter is not available on this system.")
+                print("On macOS with Homebrew Python, install it with: brew install python-tk@3.13")
+                filename = input("Enter path to measured compositions file manually: ")
+                if not filename.strip():
+                    print("No file entered. Please re-run this cell.")
+                    return
+        _run(filename)
 
     # ======================
     # Build intersect table 
@@ -636,33 +661,22 @@ class QualityFactorAnalysis:
     def calc_obs_err(self, apfu_obs):
         """
         Calculate observation errors based on analysis type.
-        
         Uses empirical power-law relationships determined for different analytical techniques:
         - EDS: calc_err = 0.0703 * apfu^0.3574
         - WDS map: calc_err = 0.0434 * apfu^0.3451
         - WDS spot: calc_err = 0.023 * apfu^0.2772
-        
         Args:
             apfu_obs: Observed APFU values
-            
         Returns:
             Calculated uncertainties clipped to technique-specific limits
         """
-        if self.analysis_type == 'EDS':
-            calc_err = self.EDS_COEFF * (apfu_obs**self.EDS_EXPONENT)
-            min_err, max_err = self.EDS_MIN_ERR, self.EDS_MAX_ERR
-        elif self.analysis_type == 'WDS map':
-            calc_err = self.WDS_MAP_COEFF * (apfu_obs**self.WDS_MAP_EXPONENT)
-            min_err, max_err = self.WDS_MAP_MIN_ERR, self.WDS_MAP_MAX_ERR
-        elif self.analysis_type == 'WDS spot':
-            calc_err = self.WDS_SPOT_COEFF * (apfu_obs**self.WDS_SPOT_EXPONENT)
-            min_err, max_err = self.WDS_SPOT_MIN_ERR, self.WDS_SPOT_MAX_ERR
-        else:
+        params = self._analysis_params.get(self.analysis_type)
+        if params is None:
             self._log_print('Please enter a valid analysis type (EDS, WDS map, WDS spot)')
             sys.exit()
-        
-        calc_err = np.clip(calc_err, min_err, max_err)
-        self._log_print(f'The calculated uncertainties are: {calc_err}')
+        coeff, exp, min_err, max_err = params
+        calc_err = np.clip(coeff * apfu_obs**exp, min_err, max_err)
+        self._log_print(f'The calculated uncertainties are: {self._fmt(calc_err)}')
         return calc_err
 
     # ================================
@@ -807,11 +821,10 @@ class QualityFactorAnalysis:
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
         max_val = self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.apfu_name[i]}', 
                                          label_log_scale=False, clim_max=100)
-        self._log_print(f'The maximum value of the quality factor for {self.apfu_name[i]} is: {np.nanmax(Qcmp_2D)}')
+        self._log_print(f'The maximum value of the quality factor for {self.apfu_name[i]} is: {self._fmt(np.nanmax(Qcmp_2D))}')
         
-        output_path = os.path.join(self.output_dir)
-        os.makedirs(output_path, exist_ok=True)
-        plt.savefig(os.path.join(output_path, f"Qcmp_{self.apfu_name[i]}.pdf"), format='pdf')
+        os.makedirs(self.output_dir, exist_ok=True)
+        plt.savefig(os.path.join(self.output_dir, f"Qcmp_{self.apfu_name[i]}.pdf"), format='pdf')
         plt.show()
         plt.close()
     
@@ -820,18 +833,17 @@ class QualityFactorAnalysis:
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
         max_val = self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.phase_name[i-1]}', 
                                          label_log_scale=False, clim_max=100)
-        self._log_print(f'The maximum value of the quality factor for {self.phase_name[i-1]} is: {np.nanmax(Qcmp_2D)}')
+        self._log_print(f'The maximum value of the quality factor for {self.phase_name[i-1]} is: {self._fmt(np.nanmax(Qcmp_2D))}')
         
         if np.nanmax(Qcmp_2D) < 100:
             n_p = np.count_nonzero(self.y == self.y[0])
             max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
             max_Qcmp_y = self.y[max_Qcmp[0]*n_p]
             max_Qcmp_x = self.x[max_Qcmp[1]]
-            self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Qcmp of {self.phase_name[i-1]} is: {max_Qcmp_x} , {max_Qcmp_y}')
+            self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Qcmp of {self.phase_name[i-1]} is: {self._fmt(max_Qcmp_x)} , {self._fmt(max_Qcmp_y)}')
         
-        output_path = os.path.join(self.output_dir)
-        os.makedirs(output_path, exist_ok=True)
-        plt.savefig(os.path.join(output_path, f"Qcmp_{self.phase_name[i-1]}.pdf"), format='pdf')
+        os.makedirs(self.output_dir, exist_ok=True)
+        plt.savefig(os.path.join(self.output_dir, f"Qcmp_{self.phase_name[i-1]}.pdf"), format='pdf')
         plt.show()
         plt.close()
     
@@ -840,7 +852,7 @@ class QualityFactorAnalysis:
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
         max_val = self._plot_contour_map(Qcmp_2D, f'{title} Q*cmp', label_log_scale=False, clim_max=100)
         
-        self._log_print(f'The maximum value of the Q*cmp is: {np.nanmax(Qcmp_2D)}')
+        self._log_print(f'The maximum value of the Q*cmp is: {self._fmt(np.nanmax(Qcmp_2D))}')
         
         max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
         n_p = np.count_nonzero(self.y == self.y[0])
@@ -849,7 +861,7 @@ class QualityFactorAnalysis:
         max_Qcmp_x = np.mean(max_Qcmp_x)
         max_Qcmp_y = np.mean(max_Qcmp_y)
         
-        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Q*cmp is: {max_Qcmp_x} , {max_Qcmp_y}')
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Q*cmp is: {self._fmt(max_Qcmp_x)} , {self._fmt(max_Qcmp_y)}')
         
         plt.plot(max_Qcmp_x, max_Qcmp_y, "ro", markersize=2)
         os.makedirs(self.output_dir, exist_ok=True)
@@ -861,25 +873,15 @@ class QualityFactorAnalysis:
         """Plot reduced chi-squared for phase."""
         redchi2_2D = np.reshape(redchi2, (len(np.unique(self.y)), len(np.unique(self.x))))
         
-        if f > 2:
-            self._log_print(f"The number of elements in {self.phase_name[i-1]} is: {f}")
-            min_val, max_val = self._plot_contour_map(redchi2_2D, f'Reduced χ2 {self.phase_name[i-1]}', 
-                                                      label_log_scale=True, clim_max=None)
-            self._log_print(f'The minimum reduced χ2 value for {self.phase_name[i-1]} is: {min_val}')
-            os.makedirs(self.output_dir, exist_ok=True)
-            plt.savefig(os.path.join(self.output_dir, f"redχ2_{self.phase_name[i-1]}.pdf"), format='pdf')
-            plt.show()
-            plt.close()
-        else:
-            self._log_print(f"The number of elements in {self.phase_name[i-1]} is: {f}")
-            min_val, max_val = self._plot_contour_map(redchi2_2D, f'χ2 {self.phase_name[i-1]}', 
-                                                      label_log_scale=True, clim_max=None)
-            self._log_print(f'The minimum χ2 value for {self.phase_name[i-1]} is: {min_val}')
-            os.makedirs(self.output_dir, exist_ok=True)
-            plt.savefig(os.path.join(self.output_dir, f"χ2_{self.phase_name[i-1]}.pdf"), format='pdf')
-            plt.show()
-            plt.close()
-        
+        prefix = "Reduced χ2" if f > 2 else "χ2"
+        self._log_print(f"The number of elements in {self.phase_name[i-1]} is: {f}")
+        min_val, _ = self._plot_contour_map(redchi2_2D, f'{prefix} {self.phase_name[i-1]}',
+                                            label_log_scale=True, clim_max=None)
+        self._log_print(f'The minimum {prefix} value for {self.phase_name[i-1]} is: {self._fmt(min_val)}')
+        os.makedirs(self.output_dir, exist_ok=True)
+        plt.savefig(os.path.join(self.output_dir, f"{prefix.replace(' ', '')}_{self.phase_name[i-1]}.pdf"), format='pdf')
+        plt.show()
+        plt.close()
         return min_val
     
     def plot_redchi2_tot(self, redchi2):
@@ -888,14 +890,14 @@ class QualityFactorAnalysis:
         min_redchi2, max_redchi2 = self._plot_contour_map(redchi2_2D, 'Total reduced χ2', 
                                                           label_log_scale=True, clim_max=None)
         
-        self._log_print(f'The minimum value of the total reduced χ2 is: {min_redchi2}')
+        self._log_print(f'The minimum value of the total reduced χ2 is: {self._fmt(min_redchi2)}')
         
         n_p = np.count_nonzero(self.y == self.y[0])
         min_redchi2_pos = np.where(redchi2_2D == np.nanmin(redchi2_2D))
         min_redchi2_y = self.y[min_redchi2_pos[0]*n_p]
         min_redchi2_x = self.x[min_redchi2_pos[1]]
         
-        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the minimum total reduced χ2 is: {min_redchi2_x} , {min_redchi2_y}')
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the minimum total reduced χ2 is: {self._fmt(min_redchi2_x)} , {self._fmt(min_redchi2_y)}')
         
         os.makedirs(self.output_dir, exist_ok=True)
         plt.savefig(os.path.join(self.output_dir, "redχ2_tot.pdf"), format='pdf')
@@ -920,12 +922,10 @@ class QualityFactorAnalysis:
     
     def Qcmp_phase(self):
         """Calculate and plot quality factor for each phase."""
-        phase_idx = []
         Qcmp_phase_tot = np.empty((len(self.y), len(np.unique(self.phase_id))))
         
         for i in np.unique(self.phase_id):
             idx = np.where(self.phase_id == i)[0]+2
-            phase_idx.append(idx)
             
             Model_phase = np.array(self.data[self.labels[idx]])
             apfu_obs_idx = self.apfu_obs[idx-2]
@@ -943,12 +943,10 @@ class QualityFactorAnalysis:
     
     def redchi2_phase(self):
         """Calculate and plot reduced chi-squared for each phase."""
-        phase_idx = []
         redchi2_phase_tot = np.empty((len(self.y), len(np.unique(self.phase_id))))
         
         for i in np.unique(self.phase_id):
             idx = np.where(self.phase_id == i)[0]+2
-            phase_idx.append(idx)
             f = len(idx)
             
             Model_phase = np.array(self.data[self.labels[idx]])
@@ -981,12 +979,9 @@ class QualityFactorAnalysis:
         
         for i in range(len(self.data[self.labels[2]])):
             Model_tot = np.array(self.data[self.labels[2:]])
-            apfu_obs_tot = self.apfu_obs
-            obs_err_tot = self.obs_err
-            redchi2_tot[i] = self.red_chi2(apfu_obs_tot, Model_tot[i], obs_err_tot, f)
+            redchi2_tot[i] = self.red_chi2(self.apfu_obs, Model_tot[i], self.obs_err, f)
         
-        min_redchi2_tot = self.plot_redchi2_tot(redchi2_tot)
-        return min_redchi2_tot
+        self.plot_redchi2_tot(redchi2_tot)
     
     def Qcmp_tot(self, Qcmp_phase_tot, redchi2_phase_tot):
         """Calculate total quality factor (unweighted)."""
@@ -996,14 +991,12 @@ class QualityFactorAnalysis:
         weight = np.ones(len(np.unique(self.phase_id)))
         weight_norm = self.norm_weight(weight)
         
-        Qcmp_allphases = np.empty(len(Qcmp_phase_tot[:, 0]))
-        for i in range(len(Qcmp_phase_tot[:, 0])):
-            Qcmp_allphases[i] = self.Q_tot(Qcmp_phase_tot[i, :], weight_norm)
+        Qcmp_allphases = Qcmp_phase_tot @ weight_norm
         
         max_Qcmp = np.where(Qcmp_allphases == np.nanmax(Qcmp_allphases))
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
         
-        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp is: {Qcmpmax_redchi2_value}")
+        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp is: {self._fmt(Qcmpmax_redchi2_value)}")
         
         self.plot_tot(Qcmp_allphases, "Unweighted")
     
@@ -1012,22 +1005,19 @@ class QualityFactorAnalysis:
         self.min_redchi2[self.min_redchi2 < 1] = 1
         weight = 1 / self.min_redchi2
         
-        self._log_print(f'The weight is: {weight}')
+        self._log_print(f'The weight is: {self._fmt(weight)}')
         
         weight_norm = self.norm_weight(weight)
-        self._log_print(f'The normalized weight fraction is: {weight_norm}')
+        self._log_print(f'The normalized weight fraction is: {self._fmt(weight_norm)}')
         
-        Qcmp_allphases_weight = np.empty(len(Qcmp_phase_tot))
-        for i in range(len(Qcmp_phase_tot)):
-            Qcmp_allphases_weight[i] = self.Q_tot(Qcmp_phase_tot[i, :], weight_norm)
+        Qcmp_allphases_weight = Qcmp_phase_tot @ weight_norm
         
         max_Qcmp = np.where(Qcmp_allphases_weight == np.nanmax(Qcmp_allphases_weight))
         Qcmpmax_redchi2_value = redchi2_phase_tot[max_Qcmp[0][0]]
         
-        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp are: {Qcmpmax_redchi2_value}")
+        self._log_print(f"The reduced χ2 values for the phases at the maximum Q*cmp are: {self._fmt(Qcmpmax_redchi2_value)}")
         
         self.plot_tot(Qcmp_allphases_weight, "Weighted")
-        return Qcmp_allphases_weight
 
 
 if __name__ == "__main__":
