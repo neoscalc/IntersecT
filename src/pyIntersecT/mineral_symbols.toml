@@ -83,6 +83,7 @@ gtmj = "Grt"      # Garnet (majorite)
 maj = "Maj"       # Majorite
 uv = "Uv"         # Uvarovite
 knor = "Krr"      # Knorringite
+carp = "Car"      # Carpholite
 
 # --- Pyroxenes ---
 opx  = "Opx"      # Orthopyroxene

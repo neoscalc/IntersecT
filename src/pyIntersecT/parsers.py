@@ -93,7 +93,7 @@ def normalize_element_name(element: str) -> str:
         'na': 'Na', 'k': 'K', 'ti': 'Ti', 'mn': 'Mn', 'cr': 'Cr',
         'ni': 'Ni', 'p': 'P', 'o': 'O', 'h': 'H', 'c': 'C',
         'cl': 'Cl', 'f': 'F', 's': 'S', 'ba': 'Ba', 'sr': 'Sr',
-        'zn': 'Zn', 'cu': 'Cu', 'co': 'Co', 'v': 'V'
+        'zn': 'Zn', 'cu': 'Cu', 'co': 'Co', 'v': 'V', 'o2': 'O'
     }
     
     elem_lower = element.strip().lower()

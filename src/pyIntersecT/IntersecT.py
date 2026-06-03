@@ -831,17 +831,16 @@ class QualityFactorAnalysis:
     def plot_phase(self, Qcmp, i):
         """Plot quality factor for each phase."""
         Qcmp_2D = np.reshape(Qcmp, (len(np.unique(self.y)), len(np.unique(self.x))))
-        max_val = self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.phase_name[i-1]}', 
-                                         label_log_scale=False, clim_max=100)
+        self._plot_contour_map(Qcmp_2D, f'Quality factor for {self.phase_name[i-1]}',
+                               label_log_scale=False, clim_max=100)
         self._log_print(f'The maximum value of the quality factor for {self.phase_name[i-1]} is: {self._fmt(np.nanmax(Qcmp_2D))}')
-        
-        if np.nanmax(Qcmp_2D) < 100:
-            n_p = np.count_nonzero(self.y == self.y[0])
-            max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
-            max_Qcmp_y = self.y[max_Qcmp[0]*n_p]
-            max_Qcmp_x = self.x[max_Qcmp[1]]
-            self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Qcmp of {self.phase_name[i-1]} is: {self._fmt(max_Qcmp_x)} , {self._fmt(max_Qcmp_y)}')
-        
+
+        n_p = np.count_nonzero(self.y == self.y[0])
+        max_Qcmp = np.where(Qcmp_2D == np.nanmax(Qcmp_2D))
+        max_Qcmp_y = np.mean(self.y[max_Qcmp[0] * n_p])
+        max_Qcmp_x = np.mean(self.x[max_Qcmp[1]])
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the maximum Qcmp of {self.phase_name[i-1]} is: {self._fmt(max_Qcmp_x)}, {self._fmt(max_Qcmp_y)}')
+
         os.makedirs(self.output_dir, exist_ok=True)
         plt.savefig(os.path.join(self.output_dir, f"Qcmp_{self.phase_name[i-1]}.pdf"), format='pdf')
         plt.show()
@@ -894,17 +893,16 @@ class QualityFactorAnalysis:
         
         n_p = np.count_nonzero(self.y == self.y[0])
         min_redchi2_pos = np.where(redchi2_2D == np.nanmin(redchi2_2D))
-        min_redchi2_y = self.y[min_redchi2_pos[0]*n_p]
-        min_redchi2_x = self.x[min_redchi2_pos[1]]
-        
-        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the minimum total reduced χ2 is: {self._fmt(min_redchi2_x)} , {self._fmt(min_redchi2_y)}')
+        min_redchi2_y = np.mean(self.y[min_redchi2_pos[0] * n_p])
+        min_redchi2_x = np.mean(self.x[min_redchi2_pos[1]])
+        self._log_print(f'The {self.labels[0]} and {self.labels[1]} position of the minimum total reduced χ2 is: {self._fmt(min_redchi2_x)}, {self._fmt(min_redchi2_y)}')
         
         os.makedirs(self.output_dir, exist_ok=True)
         plt.savefig(os.path.join(self.output_dir, "redχ2_tot.pdf"), format='pdf')
         plt.show()
         plt.close()
         
-        return min_redchi2
+        
 
     # =========================
     # Main calculation methods 
