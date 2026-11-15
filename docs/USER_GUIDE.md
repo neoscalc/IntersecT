@@ -56,6 +56,8 @@ The first row contains element identifiers combining phase names with element sy
 
 Example identifiers for a garnet-muscovite-biotite-plagioclase assemblage would include Grt_Mg, Grt_Fe, Grt_Ca, Grt_Mn, Ms_Si, Ms_Al, Ms_K, Ms_Mg, Bt_Mg, Bt_Fe, Bt_Si, Bt_K, Pl_Ca, Pl_Na, Pl_Al, Pl_Si. The specific elements chosen should reflect compositional variables that constrain pressure-temperature-composition conditions. Elements involved in substitutions in the solution models should be considered, depending on the selected chemical system, database and solution models.
 
+Iron requires particular attention, as the distinction between ferrous and ferric iron is available only for Perple_X models calculated with Fe2O3 as a system component. In this case, the model output contains separate FeO and Fe2O3 columns. Grt_Fe is compared with ferrous iron (FeO), Grt_Fe3 with ferric iron (Fe2O3) and Grt_Fetot with total iron (Fe2+ + Fe3+). Grt_Fetot should be used when the measured iron is not recalculated into Fe2+ and Fe3+ (e.g. EPMA analyses without charge-balance recalculation). Conversely, MAGEMin models ferric iron through the O component and reports total iron only. The same applies to Perple_X models calculated with O2 as a system component. In both cases, Grt_Fe is compared with total iron, and the measured value must therefore be total iron. Grt_Fe3 and Grt_Fetot must not be used, as the corresponding model values are missing and the whole phase would be excluded from the quality factor calculation.
+
 <p align="center">
   <img src="images/input_file_structure.png" alt="Annotated measured composition input file" width="650">
   <br>

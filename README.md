@@ -160,7 +160,7 @@ Measured mineral compositions must be provided in a tab-delimited text file. Com
 
 The file follows a specific six-row structure.
 
-**Row 1** specifies element identifiers using Phase_Element format where phase names follow Warr (2021) abbreviations. Consult mineral_symbols.toml to recognise abbreviations and their mappings.
+**Row 1** specifies element identifiers using Phase_Element format where phase names follow Warr (2021) abbreviations. Consult mineral_symbols.toml to recognise abbreviations and their mappings. Ferrous and ferric iron can be distinguished only for Perple_X models calculated with Fe2O3 as a system component. In this case, Phase_Fe refers to Fe2+ (FeO), Phase_Fe3 to Fe3+ (Fe2O3) and Phase_Fetot to total iron (Fe2+ + Fe3+). For MAGEMin models and for Perple_X models calculated with O2 as a system component, Phase_Fe refers to total iron. Phase_Fe3 and Phase_Fetot must not be used in these cases, as the missing model values would exclude the whole phase from the calculation.
 
 **Row 2** provides observed compositional values in atoms per formula unit corresponding to each element specified in row 1.
 

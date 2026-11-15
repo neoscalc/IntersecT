@@ -145,6 +145,11 @@ ENDMEMBER_DISTANCE_THRESHOLD["Cpx"] = 0.35
 
 def _get_element_value(phase: dict, element: str) -> float:
     """Get element value from phase dict, trying multiple key patterns."""
+
+    # Endmember classification uses total iron (Fe2+ + Fe3+) when available
+    if element == "Fe" and "Fetot_apfu" in phase:
+        return float(phase["Fetot_apfu"])
+
     # Try simple element name first
     if element in phase:
         val = phase[element]

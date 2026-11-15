@@ -30,7 +30,7 @@ Compositional data in thermodynamic model outputs appears in oxide notation with
 
 Alternative patterns include bracket notation like Mg[apfu] and parenthetical notation such as Si(apfu). These typically indicate direct elemental abundances rather than oxide compositions and receive a coefficient of one. For ambiguous cases, the system extracts the first one or two characters as the element symbol with default coefficient of one.
 
-Element names are normalized through a lookup table handling common variations. This ensures sodium appears as Na rather than na, aluminum as Al rather than al, and similarly for other elements. Normalization operates independently of coefficient extraction, maintaining separation between identification of element presence and determination of stoichiometric contribution.
+Element names are normalized through a lookup table handling common variations. This ensures sodium appears as Na rather than na, aluminum as Al rather than al, and similarly for other elements. Normalization operates independently of coefficient extraction, maintaining separation between identification of element presence and determination of stoichiometric contribution. Ferric iron is treated separately in Perple_X outputs calculated with Fe2O3 as a system component. Columns in Fe2O3 notation are stored as Fe3. When both Fe and Fe3 are present, total iron is stored as Fetot and is used for endmember discrimination. MAGEMin outputs report total iron as Fe[apfu], and no separate Fe3 or Fetot values are created.
 
 ### Compositional Data Filtering
 

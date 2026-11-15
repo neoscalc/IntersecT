@@ -311,6 +311,10 @@ def parse_table(path: str | Path,
                 element, coef = extract_element_info(col)
                 element_normalized = normalize_element_name(element)
                 
+                # Ferric iron (Fe2O3) is stored as Fe3, so that it does not overwrite the ferrous iron (FeO) stored as Fe
+                if col_lower.startswith("fe2o3"):
+                    element_normalized = "Fe3"
+                
                 # Store both raw column name and processed element
                 phase_entry[col] = num  # Keep original column
                 
@@ -325,6 +329,10 @@ def parse_table(path: str | Path,
                 # Ignore non-numeric fields
                 continue
 
+        # Total iron (Fe2+ + Fe3+), available as Fetot when Fe2O3 is a component
+        if "Fe_apfu" in phase_entry and "Fe3_apfu" in phase_entry:
+            phase_entry["Fetot_apfu"] = phase_entry["Fe_apfu"] + phase_entry["Fe3_apfu"]
+        
         blocks[key]["phases"].append(phase_entry)
 
     logger.info("Parsed %d calculation points with %d total phases", 
